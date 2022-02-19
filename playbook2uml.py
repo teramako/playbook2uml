@@ -81,6 +81,13 @@ class UMLState(UMLStateBase):
         else:
             yield '%s --> %s' % (self.name, next.get_entry_point_name())
 
+        if self.task.loop is not None:
+            if self.task.loop_with is not None:
+                loop_name = 'with_%s' % self.task.loop_with
+                yield '%s --> %s : loop(%s)\\n %s' % (self.name, self.entry_point_name, loop_name, str(self.task.loop))
+            else:
+                yield '%s --> %s : loop\\n%s' % (self.name, self.entry_point_name, str(self.task.loop))
+
     def get_entry_point_name(self) -> str:
         return self.entry_point_name
 
