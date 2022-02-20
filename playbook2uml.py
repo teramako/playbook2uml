@@ -202,6 +202,7 @@ class UMLStatePlay(UMLStateBase):
         self.play = play
         self.id = UMLStatePlay.ID
         UMLStatePlay.ID += 1
+        self.name = 'play_%d' % self.id
         self.pre_tasks = [UMLStateBlock(block) for block in play.pre_tasks]
         self.tasks = [UMLStateBlock(block) for block in play.tasks]
         self.roles = [UMLStateBlock(block) for role in play.roles if not role.from_include for block in role.get_task_blocks()]
@@ -212,16 +213,6 @@ class UMLStatePlay(UMLStateBase):
         yield from self.tasks
         yield from self.roles
         yield from self.post_tasks
-
-    def get_all_relations(self) -> Iterator[UMLStateBase]:
-        start_end = UMLStateStart()
-        yield start_end
-        yield from self.get_all_tasks()
-        yield start_end
-
-    def generate(self) -> Iterator[str]:
-        yield from self.generateDefinition()
-        yield from self.generateRelation()
 
     def generateDefinition(self, level:int=0) -> Iterator[str]:
         entry_point_name = self.get_entry_point_name()
@@ -255,21 +246,43 @@ class UMLStatePlay(UMLStateBase):
     def get_end_point_name(self) -> str:
         return 'play_%d' + self.id
 
-def playbook2PlantUML(playbook:str):
-    dataloader = DataLoader()
-    pb = Playbook.load(playbook, loader=dataloader)
-    print('@startuml')
+class UMLStatePlaybook:
+    def __init__(self, playbook:str):
+        dataloader = DataLoader()
+        self.name = playbook
+        self.playbook = Playbook.load(playbook, loader=dataloader)
+        self.plays = [UMLStatePlay(play) for play in self.playbook.get_plays()]
 
-    for play in pb.get_plays():
-        umlstateplay = UMLStatePlay(play)
-        for line in umlstateplay.generate():
-            print(line)
+    def generate(self) -> Iterator[str]:
+        '''
+        Generate PlantUML codes
+        '''
+        yield '@startuml'
+        for umlplay in self.plays:
+            yield from umlplay.generateDefinition()
 
-    print('@enduml')
+        current_state = None
+        for next_state in self.get_all_relation():
+            if current_state is None:
+                current_state = next_state
+                continue
+            yield from current_state.generateRelation(next_state)
+            current_state = next_state
+
+        yield '@enduml'
+
+    def get_all_relation(self) -> Iterator[UMLStateBase]:
+        start_end = UMLStateStart()
+        yield start_end
+        for umlplay in self.plays:
+            yield from umlplay.get_all_tasks()
+        yield start_end
 
 def main(args):
     '''main'''
-    playbook2PlantUML(args.PLAYBOOK)
+    umlplaybook = UMLStatePlaybook(args.PLAYBOOK)
+    for line in umlplaybook.generate():
+        print(line)
 
 if __name__ == '__main__':
     import argparse
