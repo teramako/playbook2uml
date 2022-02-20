@@ -224,9 +224,21 @@ class UMLStatePlay(UMLStateBase):
         yield from self.generateRelation()
 
     def generateDefinition(self, level:int=0) -> Iterator[str]:
-        yield 'title %s' % self.play.get_name()
+        entry_point_name = self.get_entry_point_name()
+        yield '%sstate "%s" as %s {' % (indent*level, self.play.get_name(), entry_point_name)
+        for key in ['hosts', 'gather_facts', 'strategy', 'serial']:
+            val = getattr(self.play, key, None)
+            if val is None:
+                continue
+            elif isinstance(val, list) and len(val) == 0:
+                continue
+
+            yield '%s%s : | %s | %s |' % (indent*level, entry_point_name, key, getattr(self.play, key, None))
+
         for tasks in self.get_all_tasks():
-            yield from tasks.generateDefinition(level)
+            yield from tasks.generateDefinition(level+1)
+
+        yield '%s}' % (indent*level)
 
     def generateRelation(self) -> Iterator[str]:
         current_state = None
