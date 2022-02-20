@@ -238,10 +238,10 @@ class UMLStatePlay(UMLStateBase):
             current_state = next_state
 
     def get_entry_point_name(self) -> str:
-        return 'play_' + self.id
+        return 'play_%d' % self.id
 
     def get_end_point_name(self) -> str:
-        return 'play_' + self.id
+        return 'play_%d' + self.id
 
 def playbook2PlantUML(playbook:str):
     dataloader = DataLoader()
