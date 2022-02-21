@@ -6,6 +6,7 @@ from abc import ABCMeta, abstractmethod
 
 from ansible.playbook import Playbook
 from ansible.parsing.dataloader import DataLoader
+from ansible.vars.manager import VariableManager
 from ansible.playbook import Playbook
 from ansible.playbook.play import Play
 from ansible.playbook.block import Block
@@ -249,8 +250,9 @@ class UMLStatePlay(UMLStateBase):
 class UMLStatePlaybook:
     def __init__(self, playbook:str):
         dataloader = DataLoader()
+        variable_manager = VariableManager(loader=dataloader)
         self.name = playbook
-        self.playbook = Playbook.load(playbook, loader=dataloader)
+        self.playbook = Playbook.load(playbook, loader=dataloader, variable_manager=variable_manager)
         self.plays = [UMLStatePlay(play) for play in self.playbook.get_plays()]
 
     def generate(self) -> Iterator[str]:
