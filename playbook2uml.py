@@ -209,15 +209,11 @@ class UMLStatePlay(UMLStateBase):
         self.roles = [UMLStateBlock(block) for role in play.roles if not role.from_include for block in role.get_task_blocks()]
         self.post_tasks = [UMLStateBlock(block) for block in play.post_tasks]
 
-    def get_all_tasks(self) -> Iterator[UMLStateBase]:
-        yield from self.pre_tasks
-        yield from self.tasks
-        yield from self.roles
-        yield from self.post_tasks
+    def get_all_tasks(self) -> list[UMLStateBase]:
+        return self.pre_tasks + self.tasks + self.roles + self.post_tasks
 
     def generateDefinition(self, level:int=0) -> Iterator[str]:
-        entry_point_name = self.get_entry_point_name()
-        yield '%sstate "%s" as %s {' % (indent*level, self.play.get_name(), entry_point_name)
+        yield '%sstate "%s" as %s {' % (indent*level, self.play.get_name(), self.name)
         for key in ['hosts', 'gather_facts', 'strategy', 'serial']:
             val = getattr(self.play, key, None)
             if val is None:
@@ -225,7 +221,7 @@ class UMLStatePlay(UMLStateBase):
             elif isinstance(val, list) and len(val) == 0:
                 continue
 
-            yield '%s%s : | %s | %s |' % (indent*level, entry_point_name, key, getattr(self.play, key, None))
+            yield '%s%s : | %s | %s |' % (indent*level, self.name, key, getattr(self.play, key, None))
 
         for tasks in self.get_all_tasks():
             yield from tasks.generateDefinition(level+1)
@@ -242,10 +238,10 @@ class UMLStatePlay(UMLStateBase):
             current_state = next_state
 
     def get_entry_point_name(self) -> str:
-        return 'play_%d' % self.id
+        return self.get_all_tasks()[0].get_entry_point_name()
 
     def get_end_point_name(self) -> str:
-        return 'play_%d' + self.id
+        return self.get_all_tasks()[-1].get_end_point_name()
 
 class UMLStatePlaybook:
     def __init__(self, playbook:str):
