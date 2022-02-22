@@ -47,12 +47,12 @@ def pair_state_iter(*args) -> Iterator[Tuple[UMLStateBase, UMLStateBase]]:
         yield (current, next)
         current = next
 
-class UMLState(UMLStateBase):
+class UMLStateTask(UMLStateBase):
     ID = 1
     def __init__(self, task) -> None:
         self.task = task
-        self.id = UMLState.ID
-        UMLState.ID += 1
+        self.id = UMLStateTask.ID
+        UMLStateTask.ID += 1
 
         self.name = 'task_%d' % self.id
         self.entry_point_name = self.name
@@ -119,7 +119,7 @@ class UMLStateBlock(UMLStateBase):
             if isinstance(task, Block):
                 results.append(UMLStateBlock(task))
             else:
-                results.append(UMLState(task))
+                results.append(UMLStateTask(task))
         return results
 
     def generateDefinition(self, level:int=0) -> Iterator[str]:
