@@ -32,7 +32,7 @@ class UMLStateBase(metaclass=ABCMeta):
     def get_end_point_name(self) -> str:
         pass
 
-    def get_when_list(self, task):
+    def get_when_list(self, task) -> list[str]:
         when = task._attributes['when']
         if when is Sentinel:
             return []
