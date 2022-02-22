@@ -1,7 +1,7 @@
 #!env python
 # -*- coding: utf-8 -*-
 from __future__ import (absolute_import, division, print_function, annotations)
-from typing import Iterator, Optional
+from typing import Iterator, Optional, Tuple
 from abc import ABCMeta, abstractmethod
 
 from ansible.playbook import Playbook
@@ -40,6 +40,12 @@ class UMLStateBase(metaclass=ABCMeta):
             return when
         else:
             return [when]
+
+def pair_state_iter(*args) -> Iterator[Tuple[UMLStateBase, UMLStateBase]]:
+    current = args[0]
+    for next in args[1:]:
+        yield (current, next)
+        current = next
 
 class UMLState(UMLStateBase):
     ID = 1
@@ -168,23 +174,13 @@ class UMLStateBlock(UMLStateBase):
             yield '%s --> %s : %s' % (self.name + '_when', self.tasks[0].get_entry_point_name(), ' and '.join(self.when))
             yield '%s --> %s : %s' % (self.get_entry_point_name(), next.get_entry_point_name(), 'skip')
 
-        tasks = iter(self.tasks + self.always)
-        current_task = tasks.__next__()
-        for next_task in tasks:
-            yield from current_task.generateRelation(next_task)
-            current_task = next_task
-        else:
-            yield from current_task.generateRelation(next)
+        for current_state, next_state in pair_state_iter(*self.tasks, *self.always, next):
+            yield from current_state.generateRelation(next_state)
 
         if len(self.rescue) > 0:
-            if len(self.always) > 0:
-                rescue_tasks = iter(self.rescue + [self.always[0]])
-            else:
-                rescue_tasks = iter(self.rescue + [next])
-            current_rescue_task = rescue_tasks.__next__()
-            for next_rescue_task in rescue_tasks:
-                yield from current_rescue_task.generateRelation(next_rescue_task)
-                current_rescue_task = next_rescue_task
+            states = pair_state_iter(*self.rescue, self.always[0] if len(self.always) > 0 else next)
+            for current_state, next_state in states:
+                yield from current_state.generateRelation(next_state)
 
 class UMLStateStart(UMLStateBase):
     def generateDefinition(self, level: int = 0) -> Iterator[str]:
@@ -228,14 +224,9 @@ class UMLStatePlay(UMLStateBase):
 
         yield '%s}' % (indent*level)
 
-    def generateRelation(self) -> Iterator[str]:
-        current_state = None
-        for next_state in self.get_all_relations():
-            if current_state is None:
-                current_state = next_state
-                continue
+    def generateRelation(self, next_play:UMLStatePlay=None) -> Iterator[str]:
+        for current_state, next_state in pair_state_iter(*self.get_all_tasks(), next_play):
             yield from current_state.generateRelation(next_state)
-            current_state = next_state
 
     def get_entry_point_name(self) -> str:
         return self.get_all_tasks()[0].get_entry_point_name()
@@ -259,22 +250,11 @@ class UMLStatePlaybook:
         for umlplay in self.plays:
             yield from umlplay.generateDefinition()
 
-        current_state = None
-        for next_state in self.get_all_relation():
-            if current_state is None:
-                current_state = next_state
-                continue
+        start_end = UMLStateStart()
+        for current_state, next_state in pair_state_iter(start_end, *self.plays, start_end):
             yield from current_state.generateRelation(next_state)
-            current_state = next_state
 
         yield '@enduml'
-
-    def get_all_relation(self) -> Iterator[UMLStateBase]:
-        start_end = UMLStateStart()
-        yield start_end
-        for umlplay in self.plays:
-            yield from umlplay.get_all_tasks()
-        yield start_end
 
 def main(args):
     '''main'''
