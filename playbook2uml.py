@@ -211,13 +211,11 @@ class UMLStatePlay(UMLStateBase):
     def generateDefinition(self, level:int=0) -> Iterator[str]:
         yield '%sstate "%s" as %s {' % (indent*level, self.play.get_name(), self.name)
         for key in ['hosts', 'gather_facts', 'strategy', 'serial']:
-            val = getattr(self.play, key, None)
-            if val is None:
-                continue
-            elif isinstance(val, list) and len(val) == 0:
+            val = self.play._attributes[key]
+            if val is Sentinel:
                 continue
 
-            yield '%s%s : | %s | %s |' % (indent*level, self.name, key, getattr(self.play, key, None))
+            yield '%s%s : | %s | %s |' % (indent*(level+1), self.name, key, val)
 
         for tasks in self.get_all_tasks():
             yield from tasks.generateDefinition(level+1)
