@@ -74,7 +74,12 @@ class UMLStateTask(UMLStateBase):
         for key in obj:
             if key.startswith('_'):
                 continue
-            yield '%s%s : | %s | %s |' %(indent*level, self.name, key, obj[key])
+            val = obj[key]
+            if isinstance(val, str):
+                lines = val.splitlines()
+                if len(lines) > 1:
+                    val = '%s ...(+%d lines)' % (lines[0], len(lines)-1)
+            yield '%s%s : | %s | %s |' %(indent*level, self.name, key, val)
     
     def _generateWhenDefinition(self, level:int=0) -> Iterator[str]:
         prefix = indent * level
