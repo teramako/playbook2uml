@@ -58,12 +58,13 @@ class UMLStateTask(UMLStateBase):
         self.entry_point_name = self.name
         self.end_point_name = self.name
         self.when = self.get_when_list(self.task)
-        if len(self.when) > 0:
+        self.has_when = len(self.when) > 0
+        if self.has_when:
             self.entry_point_name = '%s_when' % self.name
         
     def generateDefinition(self, level:int=0) -> Iterator[str]:
         prefix = indent * level
-        if len(self.when) > 0:
+        if self.has_when:
             yield from self._generateWhenDefinition(level)
 
         yield '%sstate "%s" as %s' % (prefix, self.task.get_name(), self.name)
@@ -84,7 +85,7 @@ class UMLStateTask(UMLStateBase):
         yield '%sstate task_%d_when <<choice>>' % (prefix, self.id)
 
     def generateRelation(self, next: Optional[UMLStateBase] = None) -> Iterator[str]:
-        if len(self.when) > 0:
+        if self.has_when:
             yield '%s --> %s : %s' % (self.entry_point_name, self.name, ' and '.join(self.when))
             yield '%s --> %s' % (self.name, next.get_entry_point_name())
             yield '%s --> %s : %s' % (self.entry_point_name, next.get_entry_point_name(), 'skip')
@@ -115,6 +116,9 @@ class UMLStateBlock(UMLStateBase):
         self.always = self.get_UMLTasks(block.always)
         self.rescue = self.get_UMLTasks(block.rescue)
         self.when = self.get_when_list(block)
+        self.has_always = len(self.always) > 0
+        self.has_rescue = len(self.rescue) > 0
+        self.has_when = len(self.when) > 0
 
     def get_UMLTasks(self, tasks) -> list[UMLStateBase]:
         results = []
@@ -126,10 +130,10 @@ class UMLStateBlock(UMLStateBase):
         return results
 
     def generateDefinition(self, level:int=0) -> Iterator[str]:
-        is_explicit = self.block.name or len(self.always) > 0 or len(self.rescue) > 0
+        is_explicit = self.block.name or self.has_always or self.has_rescue
         next_level = level
         prefix = indent * level
-        if len(self.when) > 0:
+        if self.has_when:
             yield '%sstate %s <<choice>>' % (prefix, self.name + '_when')
         if is_explicit:
             yield '%sstate "Block: %s" as %s {' % (prefix, self.block.name, self.name)
@@ -144,7 +148,7 @@ class UMLStateBlock(UMLStateBase):
             yield '%s}' % prefix
     
     def _generateAlwaysDefinition(self, level:int=0) -> Iterator[str]:
-        if len(self.always) == 0:
+        if not self.has_always:
             return
         prefix = indent * level
         yield '%sstate "Always" as %s {' % (prefix, self.name + '_always')
@@ -153,7 +157,7 @@ class UMLStateBlock(UMLStateBase):
         yield '%s}' % prefix
     
     def _generateRescueDefinition(self, level:int=0) -> Iterator[str]:
-        if len(self.rescue) == 0:
+        if not self.has_rescue:
             return
         prefix = indent * level
         yield '%sstate "Rescue" as %s {' % (prefix, self.name + '_rescue')
@@ -162,17 +166,17 @@ class UMLStateBlock(UMLStateBase):
         yield '%s}' % prefix
     
     def get_entry_point_name(self) -> str:
-        if len(self.when) > 0:
+        if self.has_when:
             return self.name + '_when'
         return self.tasks[0].get_entry_point_name()
 
     def get_end_point_name(self) -> str:
-        if len(self.always) > 0:
+        if self.has_always:
             return self.always[-1].get_end_point_name()
         return self.tasks[-1].get_end_point_name()
 
     def generateRelation(self, next:UMLStateBase) -> Iterator[str]:
-        if len(self.when) > 0:
+        if self.has_when:
             #yield '%s' % self.when
             yield '%s --> %s : %s' % (self.name + '_when', self.tasks[0].get_entry_point_name(), ' and '.join(self.when))
             yield '%s --> %s : %s' % (self.get_entry_point_name(), next.get_entry_point_name(), 'skip')
@@ -180,8 +184,8 @@ class UMLStateBlock(UMLStateBase):
         for current_state, next_state in pair_state_iter(*self.tasks, *self.always, next):
             yield from current_state.generateRelation(next_state)
 
-        if len(self.rescue) > 0:
-            states = pair_state_iter(*self.rescue, self.always[0] if len(self.always) > 0 else next)
+        if self.has_rescue:
+            states = pair_state_iter(*self.rescue, self.always[0] if self.has_always else next)
             for current_state, next_state in states:
                 yield from current_state.generateRelation(next_state)
 
