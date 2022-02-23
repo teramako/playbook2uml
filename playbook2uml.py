@@ -224,6 +224,12 @@ class UMLStatePlay(UMLStateBase):
 
             yield '%s%s : | %s | %s |' % (indent*(level+1), self.name, key, val)
 
+        if len(self.play.vars_files) > 0:
+            key_name = 'vars_files'
+            for var_file in self.play.vars_files:
+                yield '%s%s : | %s | %s |' % (indent*(level+1), self.name, key_name, var_file)
+                key_name = ''
+
         for tasks in self.get_all_tasks():
             yield from tasks.generateDefinition(level+1)
 
