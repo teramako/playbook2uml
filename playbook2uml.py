@@ -72,8 +72,6 @@ class UMLStateTask(UMLStateBase):
 
     def _generete_table(self, obj:dict, level:int=0) -> Iterator[str]:
         for key in obj:
-            if key.startswith('_'):
-                continue
             val = obj[key]
             if isinstance(val, str):
                 lines = val.splitlines()
