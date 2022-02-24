@@ -215,6 +215,26 @@ class UMLStatePlay(UMLStateBase):
     def get_all_tasks(self) -> list[UMLStateBase]:
         return self.pre_tasks + self.tasks + self.roles + self.post_tasks
 
+    def _generateVarsFilesDefition(self, level:int=0) -> Iterator[str]:
+        '''
+        generate `vars_files` definition
+        '''
+        if len(self.play.vars_prompt) > 0:
+            key_name = 'vars_files'
+            for var_file in self.play.vars_files:
+                yield '%s%s : | %s | %s |' % (indent*level, self.name, key_name, var_file)
+                key_name = ''
+
+    def _generateVarsPromptDefinition(self, level:int=0) -> Iterator[str]:
+        '''
+        generate `vars_prompt` definition
+        '''
+        if len(self.play.vars_prompt) > 0:
+            key_name = 'vars_prompt'
+            for prompt in self.play.vars_prompt:
+                yield '%s%s : | %s | %s |' % (indent*level, self.name, key_name, prompt['name'])
+                key_name = ''
+
     def generateDefinition(self, level:int=0) -> Iterator[str]:
         yield '%sstate "%s" as %s {' % (indent*level, self.play.get_name(), self.name)
         for key in ['hosts', 'gather_facts', 'strategy', 'serial']:
@@ -224,17 +244,8 @@ class UMLStatePlay(UMLStateBase):
 
             yield '%s%s : | %s | %s |' % (indent*(level+1), self.name, key, val)
 
-        if len(self.play.vars_files) > 0:
-            key_name = 'vars_files'
-            for var_file in self.play.vars_files:
-                yield '%s%s : | %s | %s |' % (indent*(level+1), self.name, key_name, var_file)
-                key_name = ''
-
-        if len(self.play.vars_prompt) > 0:
-            key_name = 'vars_prompt'
-            for prompt in self.play.vars_prompt:
-                yield '%s%s : | %s | %s |' % (indent*(level+1), self.name, key_name, prompt['name'])
-                key_name = ''
+        yield from self._generateVarsFilesDefition(level=level+1)
+        yield from self._generateVarsPromptDefinition(level=level+1)
 
         for tasks in self.get_all_tasks():
             yield from tasks.generateDefinition(level+1)
