@@ -208,12 +208,12 @@ class UMLStatePlay(UMLStateBase):
         UMLStatePlay.ID += 1
         self.name = 'play_%d' % self.id
         self.pre_tasks = [UMLStateBlock(block) for block in play.pre_tasks]
-        self.tasks = [UMLStateBlock(block) for block in play.tasks]
         self.roles = [UMLStateBlock(block) for role in play.roles if not role.from_include for block in role.get_task_blocks()]
+        self.tasks = [UMLStateBlock(block) for block in play.tasks]
         self.post_tasks = [UMLStateBlock(block) for block in play.post_tasks]
 
     def get_all_tasks(self) -> list[UMLStateBase]:
-        return self.pre_tasks + self.tasks + self.roles + self.post_tasks
+        return self.pre_tasks + self.roles + self.tasks + self.post_tasks
 
     def _generateVarsFilesDefition(self, level:int=0) -> Iterator[str]:
         '''
