@@ -10,6 +10,7 @@ from ansible.vars.manager import VariableManager
 from ansible.playbook import Playbook
 from ansible.playbook.play import Play
 from ansible.playbook.block import Block
+from ansible.playbook.task import Task
 from ansible.utils.sentinel import Sentinel
 __metaclass__ = type
 
@@ -49,7 +50,7 @@ def pair_state_iter(*args) -> Iterator[Tuple[UMLStateBase, UMLStateBase]]:
 
 class UMLStateTask(UMLStateBase):
     ID = 1
-    def __init__(self, task) -> None:
+    def __init__(self, task:Task) -> None:
         self.task = task
         self.id = UMLStateTask.ID
         UMLStateTask.ID += 1
