@@ -71,6 +71,7 @@ class UMLStateTask(UMLStateBase):
         yield '%sstate "%s" as %s' % (prefix, self.task.get_name(), self.name)
         yield '%s%s : Action **%s**' % (prefix, self.name, self.task.action)
         yield from self._generete_table(self.task.args, level)
+        yield from self._generateBecomeDefinition(level=level)
 
     def _generete_table(self, obj:dict, level:int=0) -> Iterator[str]:
         for key in obj:
@@ -81,6 +82,14 @@ class UMLStateTask(UMLStateBase):
                     val = '%s ...(+%d lines)' % (lines[0], len(lines)-1)
             yield '%s%s : | %s | %s |' %(indent*level, self.name, key, val)
     
+    def _generateBecomeDefinition(self, level:int=0) -> Iterator[str]:
+        if self.task.become:
+            yield '%s%s : ----'% (indent*level, self.name)
+            if become_user := self.task.become_user:
+                yield '%s%s : **become** yes (to %s)' % (indent*level, self.name, become_user)
+            else:
+                yield '%s%s : **become** yes' % (indent*level, self.name)
+
     def _generateWhenDefinition(self, level:int=0) -> Iterator[str]:
         prefix = indent * level
         yield '%sstate task_%d_when <<choice>>' % (prefix, self.id)
