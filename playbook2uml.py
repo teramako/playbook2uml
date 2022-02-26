@@ -91,16 +91,20 @@ class UMLStateTask(UMLStateBase):
                 yield '%s%s : **become** yes' % (indent*level, self.name)
 
     def _generateWhenDefinition(self, level:int=0) -> Iterator[str]:
-        prefix = indent * level
-        yield '%sstate task_%d_when <<choice>>' % (prefix, self.id)
+        yield '%sstate %s <<choice>>' % (indent*level, self.entry_point_name)
+        yield '%snote right of %s' % (indent*level, self.entry_point_name)
+        yield '%s**when**:' % (indent*(level+1))
+        for when in self.when:
+            yield '%s - %s' % (indent*(level+1), when)
+        yield '%send note' % (indent*level)
 
     def generateRelation(self, next: Optional[UMLStateBase] = None) -> Iterator[str]:
         if self.has_when:
-            yield '%s --> %s : %s' % (self.entry_point_name, self.name, ' and '.join(self.when))
-            yield '%s --> %s' % (self.name, next.get_entry_point_name())
+            yield '%s --> %s' % (self.entry_point_name, self.name)
+            yield '%s --> %s' % (self.end_point_name, next.get_entry_point_name())
             yield '%s --> %s : %s' % (self.entry_point_name, next.get_entry_point_name(), 'skip')
         else:
-            yield '%s --> %s' % (self.name, next.get_entry_point_name())
+            yield '%s --> %s' % (self.end_point_name, next.get_entry_point_name())
 
         if self.task.loop is not None:
             if self.task.loop_with is not None:
