@@ -62,6 +62,11 @@ class UMLStateTask(UMLStateBase):
         self.has_when = len(self.when) > 0
         if self.has_when:
             self.entry_point_name = '%s_when' % self.name
+
+        self.has_until = False
+        if self.task.until:
+            self.has_until = True
+            self.end_point_name = '%s_until' % self.name
         
     def generateDefinition(self, level:int=0) -> Iterator[str]:
         prefix = indent * level
@@ -72,6 +77,9 @@ class UMLStateTask(UMLStateBase):
         yield '%s%s : Action **%s**' % (prefix, self.name, self.task.action)
         yield from self._generete_table(self.task.args, level)
         yield from self._generateBecomeDefinition(level=level)
+
+        if self.has_until:
+            yield from self._generateUntilDefinition(level)
 
     def _generete_table(self, obj:dict, level:int=0) -> Iterator[str]:
         for key in obj:
@@ -89,6 +97,14 @@ class UMLStateTask(UMLStateBase):
                 yield '%s%s : **become** yes (to %s)' % (indent*level, self.name, become_user)
             else:
                 yield '%s%s : **become** yes' % (indent*level, self.name)
+
+    def _generateUntilDefinition(self, level:int=0) -> Iterator[str]:
+        yield '%sstate %s <<choice>>' % (indent*level, self.end_point_name)
+        yield '%snote right of %s' % (indent*level, self.end_point_name)
+        yield '%s**until**: %s' % (indent*(level+1), self.task.until)
+        yield '%s**retres**: %s' % (indent*(level+1), self.task.retries)
+        yield '%s**delay**: %s (secconds)' % (indent*(level+1), self.task.delay)
+        yield '%send note' % (indent*level)
 
     def _generateWhenDefinition(self, level:int=0) -> Iterator[str]:
         yield '%sstate %s <<choice>>' % (indent*level, self.entry_point_name)
@@ -112,6 +128,10 @@ class UMLStateTask(UMLStateBase):
                 yield '%s --> %s : loop(%s)\\n %s' % (self.name, self.entry_point_name, loop_name, str(self.task.loop))
             else:
                 yield '%s --> %s : loop\\n%s' % (self.name, self.entry_point_name, str(self.task.loop))
+
+        if self.has_until:
+            yield '%s --> %s' % (self.name, self.end_point_name)
+            yield '%s --> %s : retry' % (self.end_point_name, self.entry_point_name)
 
     def get_entry_point_name(self) -> str:
         return self.entry_point_name
