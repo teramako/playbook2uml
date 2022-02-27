@@ -168,7 +168,8 @@ class UMLStateBlock(UMLStateBase):
         next_level = level
         prefix = indent * level
         if self.has_when:
-            yield '%sstate %s <<choice>>' % (prefix, self.name + '_when')
+            yield from self._generateWhenDefinition(level)
+
         if is_explicit:
             yield '%sstate "Block: %s" as %s {' % (prefix, self.block.name, self.name)
             next_level+=1
@@ -181,6 +182,15 @@ class UMLStateBlock(UMLStateBase):
             yield from self._generateRescueDefinition(next_level)
             yield '%s}' % prefix
     
+    def _generateWhenDefinition(self, level:int=0) -> Iterator[str]:
+        name = '%s_when'% self.name
+        yield '%sstate %s <<choice>>' % (indent*level, name)
+        yield '%snote right of %s' % (indent*level, name)
+        yield '%s**when**:' % (indent*(level+1))
+        for when in self.when:
+            yield '%s - %s' % (indent*(level+1), when)
+        yield '%send note' % (indent*level)
+
     def _generateAlwaysDefinition(self, level:int=0) -> Iterator[str]:
         if not self.has_always:
             return
@@ -212,7 +222,7 @@ class UMLStateBlock(UMLStateBase):
     def generateRelation(self, next:UMLStateBase) -> Iterator[str]:
         if self.has_when:
             #yield '%s' % self.when
-            yield '%s --> %s : %s' % (self.name + '_when', self.tasks[0].get_entry_point_name(), ' and '.join(self.when))
+            yield '%s --> %s' % (self.name + '_when', self.tasks[0].get_entry_point_name())
             yield '%s --> %s : %s' % (self.get_entry_point_name(), next.get_entry_point_name(), 'skip')
 
         for current_state, next_state in pair_state_iter(*self.tasks, *self.always, next):
