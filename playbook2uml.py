@@ -73,7 +73,7 @@ class UMLStateTask(UMLStateBase):
         if self.has_when:
             yield from self._generateWhenDefinition(level)
 
-        yield '%sstate "%s" as %s' % (prefix, self.task.get_name(), self.name)
+        yield '%sstate "== %s" as %s' % (prefix, self.task.get_name(), self.name)
         yield '%s%s : Action **%s**' % (prefix, self.name, self.task.action)
         yield from self._generete_table(self.task.args, level)
         yield from self._generateBecomeDefinition(level=level)
@@ -109,9 +109,11 @@ class UMLStateTask(UMLStateBase):
     def _generateWhenDefinition(self, level:int=0) -> Iterator[str]:
         yield '%sstate %s <<choice>>' % (indent*level, self.entry_point_name)
         yield '%snote right of %s' % (indent*level, self.entry_point_name)
-        yield '%s**when**:' % (indent*(level+1))
+        note_indent = indent * (level+1)
+        yield '%s=== when' % note_indent
+        yield '%s----' % note_indent
         for when in self.when:
-            yield '%s - %s' % (indent*(level+1), when)
+            yield '%s - %s' % (note_indent, when)
         yield '%send note' % (indent*level)
 
     def generateRelation(self, next: Optional[UMLStateBase] = None) -> Iterator[str]:
@@ -192,9 +194,11 @@ class UMLStateBlock(UMLStateBase):
         name = '%s_when'% self.name
         yield '%sstate %s <<choice>>' % (indent*level, name)
         yield '%snote right of %s' % (indent*level, name)
-        yield '%s**when**:' % (indent*(level+1))
+        note_indent = indent * (level+1)
+        yield '%s=== when' % note_indent
+        yield '%s----' % note_indent
         for when in self.when:
-            yield '%s - %s' % (indent*(level+1), when)
+            yield '%s - %s' % (note_indent, when)
         yield '%send note' % (indent*level)
 
     def _generateAlwaysDefinition(self, level:int=0) -> Iterator[str]:
@@ -286,7 +290,7 @@ class UMLStatePlay(UMLStateBase):
                 key_name = ''
 
     def generateDefinition(self, level:int=0) -> Iterator[str]:
-        yield '%sstate "%s" as %s {' % (indent*level, self.play.get_name(), self.name)
+        yield '%sstate "= Play: %s" as %s {' % (indent*level, self.play.get_name(), self.name)
         for key in ['hosts', 'gather_facts', 'strategy', 'serial']:
             val = self.play._attributes[key]
             if val is Sentinel:
