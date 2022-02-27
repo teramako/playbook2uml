@@ -122,16 +122,22 @@ class UMLStateTask(UMLStateBase):
         else:
             yield '%s --> %s' % (self.end_point_name, next.get_entry_point_name())
 
-        if self.task.loop is not None:
-            if self.task.loop_with is not None:
-                loop_name = 'with_%s' % self.task.loop_with
-                yield '%s --> %s : loop(%s)\\n %s' % (self.name, self.entry_point_name, loop_name, str(self.task.loop))
-            else:
-                yield '%s --> %s : loop\\n%s' % (self.name, self.entry_point_name, str(self.task.loop))
+        yield from self._generateLoopRelation()
 
         if self.has_until:
             yield '%s --> %s' % (self.name, self.end_point_name)
             yield '%s --> %s : retry' % (self.end_point_name, self.entry_point_name)
+
+    def _generateLoopRelation(self) -> Iterator[str]:
+        if self.task.loop is None:
+            return
+        loop_name = ('loop(with_%s)' % self.task.loop_with) if self.task.loop_with else 'loop'
+        yield '%s --> %s' % (self.name, self.entry_point_name)
+        yield 'note on link'
+        yield '%s=== %s' % (indent, loop_name)
+        yield '%s----' % indent
+        yield '%s%s' % (indent, self.task.loop)
+        yield 'end note'
 
     def get_entry_point_name(self) -> str:
         return self.entry_point_name
