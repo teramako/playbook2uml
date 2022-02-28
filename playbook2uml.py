@@ -1,6 +1,7 @@
 #!env python
 # -*- coding: utf-8 -*-
 from __future__ import (absolute_import, division, print_function, annotations)
+from argparse import ArgumentParser, Namespace
 from typing import Iterator, Optional, Tuple
 from abc import ABCMeta, abstractmethod
 
@@ -317,18 +318,23 @@ class UMLStatePlay(UMLStateBase):
         return self.get_all_tasks()[-1].get_end_point_name()
 
 class UMLStatePlaybook:
-    def __init__(self, playbook:str):
+    def __init__(self, playbook:str, option:Namespace=None):
         dataloader = DataLoader()
         variable_manager = VariableManager(loader=dataloader)
-        self.name = playbook
         self.playbook = Playbook.load(playbook, loader=dataloader, variable_manager=variable_manager)
         self.plays = [UMLStatePlay(play) for play in self.playbook.get_plays()]
+        self.name:str = None
+        if option:
+            if option.title:
+                self.name = option.title
 
     def generate(self) -> Iterator[str]:
         '''
         Generate PlantUML codes
         '''
         yield '@startuml'
+        if self.name:
+            yield 'title %s' % self.name
         for umlplay in self.plays:
             yield from umlplay.generateDefinition()
 
@@ -338,15 +344,15 @@ class UMLStatePlaybook:
 
         yield '@enduml'
 
-def main(args):
+def main(args:Namespace):
     '''main'''
-    umlplaybook = UMLStatePlaybook(args.PLAYBOOK)
+    umlplaybook = UMLStatePlaybook(args.PLAYBOOK, option=args)
     for line in umlplaybook.generate():
         print(line)
 
 if __name__ == '__main__':
-    import argparse
-    ap = argparse.ArgumentParser(description='Ansible-Playbook to PlantUML')
+    ap = ArgumentParser(description='Ansible-Playbook to PlantUML')
     ap.add_argument('PLAYBOOK', help='playbook file')
+    ap.add_argument('-T', '--title', type=str, help='The title of the playbook')
     args = ap.parse_args()
     main(args)
