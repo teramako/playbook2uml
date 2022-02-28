@@ -5,12 +5,16 @@ Ansible-playbook to PlantUML
 
 The PlantUML code is out to stdout.
 ```console
-$ python playbook2uml.py path/to/playbook.yml
+$ python playbook2uml.py path/to/playbook.yml --title "hello_world.yml"
 @startuml
-title Hello playbook2uml
-state "Hello playbook2uml" as task_1
-task_1 : Action **debug**
-task_1 : | msg | Hello ansible playbook to UML |
+title hello_world.yml
+state "= Play: Hello playbook2uml" as play_1 {
+    play_1 : | hosts | localhost |
+    play_1 : | gather_facts | False |
+    state "== Hello playbook2uml" as task_1
+    task_1 : Action **debug**
+    task_1 : | msg | Hello ansible playbook to UML |
+}
 [*] --> task_1
 task_1 --> [*]
 @enduml
@@ -18,7 +22,8 @@ task_1 --> [*]
 
 You maybe pipe to a PlantUML server with `curl`.
 ```sh
-python playbook2uml.py path/to/playbook.yml | curl --data-binary @- http://plantuml-server.example.com/svg/ -o - > path/to/foo.svg
+python playbook2uml.py path/to/playbook.yml --title "Sample 1" | \
+    curl --data-binary @- http://plantuml-server.example.com/svg/ -o - > path/to/foo.svg
 ```
 
 ## Output
