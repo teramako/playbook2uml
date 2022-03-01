@@ -1,7 +1,7 @@
 #!env python
 # -*- coding: utf-8 -*-
 from __future__ import (absolute_import, division, print_function, annotations)
-from argparse import ArgumentParser, Namespace
+from argparse import Namespace
 from typing import Iterator, Optional, Tuple
 from abc import ABCMeta, abstractmethod
 
@@ -351,17 +351,3 @@ class UMLStatePlaybook:
             yield from current_state.generateRelation(next_state)
 
         yield '@enduml'
-
-def main():
-    '''main'''
-    ap = ArgumentParser(description='Ansible-Playbook to PlantUML')
-    ap.add_argument('PLAYBOOK', help='playbook file')
-    ap.add_argument('-T', '--title', type=str, help='The title of the playbook')
-    args = ap.parse_args()
-
-    umlplaybook = UMLStatePlaybook(args.PLAYBOOK, option=args)
-    for line in umlplaybook.generate():
-        print(line)
-
-if __name__ == '__main__':
-    main()
