@@ -1,0 +1,20 @@
+from importlib.metadata import entry_points
+from setuptools import setup
+
+setup(
+    name='playbook2uml',
+    version='0.1',
+    description='Create a PlantUML State Diagram from Ansible-Playbook',
+    author='teramako',
+    author_email='teramako@gmail.com',
+    url='https://github.com/teramako/playbook2uml',
+    license='MIT',
+    packages=['playbook2uml'],
+    entry_points={
+        'console_scripts': ['playbook2uml = playbook2uml.cli:main']
+    },
+    requires=['ansible'],
+    classifiers=[
+        'Programing Langumage :: Python :: 3.8'
+    ],
+)
