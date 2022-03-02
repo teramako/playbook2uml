@@ -1,5 +1,4 @@
-from importlib.metadata import entry_points
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='playbook2uml',
@@ -9,7 +8,7 @@ setup(
     author_email='teramako@gmail.com',
     url='https://github.com/teramako/playbook2uml',
     license='MIT',
-    packages=['playbook2uml'],
+    packages=find_packages(),
     entry_points={
         'console_scripts': ['playbook2uml = playbook2uml.cli:main']
     },

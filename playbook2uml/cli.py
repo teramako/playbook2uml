@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import (absolute_import, division, print_function, annotations)
 from argparse import ArgumentParser
-from umlstate import UMLStatePlaybook
+from playbook2uml.umlstate import UMLStatePlaybook
 
 def main():
     '''main'''
