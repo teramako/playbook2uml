@@ -77,10 +77,11 @@ class UMLStateTask(UMLStateBase):
         yield '%sstate "== %s" as %s' % (prefix, self.task.get_name(), self.name)
         yield '%s%s : Action **%s**' % (prefix, self.name, self.task.action)
         yield from self._generete_table(self.task.args, level)
-        if any((getattr(self.task, attr) is not None for attr in ['become', 'register'])):
+        if any((getattr(self.task, attr) is not None for attr in ['become', 'register', 'delegate_to'])):
             yield '%s%s : ....' % (prefix, self.name)
             yield from self._generateBecomeDefinition(level=level)
             yield from self._generateRegisterDefinition(level=level)
+            yield from self._generateDelegateDefinition(level=level)
 
         if self.has_until:
             yield from self._generateUntilDefinition(level)
@@ -106,6 +107,10 @@ class UMLStateTask(UMLStateBase):
                 yield '%s%s : **become** yes (to %s)' % (indent*level, self.name, become_user)
             else:
                 yield '%s%s : **become** yes' % (indent*level, self.name)
+
+    def _generateDelegateDefinition(self, level:int=0) -> Iterator[str]:
+        if val := self.task.delegate_to:
+            yield '%s%s : **delegate_to** %s' % (indent*level, self.name, val)
 
     def _generateUntilDefinition(self, level:int=0) -> Iterator[str]:
         yield '%sstate %s <<choice>>' % (indent*level, self.end_point_name)
