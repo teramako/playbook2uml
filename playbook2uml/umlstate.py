@@ -336,20 +336,20 @@ class UMLStatePlaybook:
         variable_manager = VariableManager(loader=dataloader)
         self.playbook = Playbook.load(playbook, loader=dataloader, variable_manager=variable_manager)
         self.plays = [UMLStatePlay(play) for play in self.playbook.get_plays()]
-        self.name:str = None
-        if option:
-            if option.title:
-                self.name = option.title
+        self.options = option
 
     def generate(self) -> Iterator[str]:
         '''
         Generate PlantUML codes
         '''
         yield '@startuml'
-        if self.name:
-            yield 'title %s' % self.name
-        for umlplay in self.plays:
-            yield from umlplay.generateDefinition()
+        if self.options:
+            if title := self.options.title:
+                yield 'title %s' % title
+            if theme := self.options.theme:
+                yield '!theme %s' % theme
+            for umlplay in self.plays:
+                yield from umlplay.generateDefinition()
 
         start_end = UMLStateStart()
         for current_state, next_state in pair_state_iter(start_end, *self.plays, start_end):
