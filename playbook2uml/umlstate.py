@@ -348,6 +348,8 @@ class UMLStatePlaybook:
                 yield 'title %s' % title
             if theme := self.options.theme:
                 yield '!theme %s' % theme
+            if self.options.left_to_right:
+                yield 'left to right direction'
             for umlplay in self.plays:
                 yield from umlplay.generateDefinition()
 
