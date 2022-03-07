@@ -56,29 +56,29 @@ class UMLStateTask(UMLStateBase):
         self.id = UMLStateTask.ID
         UMLStateTask.ID += 1
 
-        self.name = 'task_%d' % self.id
-        self.entry_point_name = self.name
-        self.end_point_name = self.name
+        self._name = 'task_%d' % self.id
+        self._entry_point_name = self._name
+        self._end_point_name = self._name
         self.when = self.get_when_list(self.task)
         self.has_when = len(self.when) > 0
         if self.has_when:
-            self.entry_point_name = '%s_when' % self.name
+            self._entry_point_name = '%s_when' % self._name
 
         self.has_until = False
         if self.task.until:
             self.has_until = True
-            self.end_point_name = '%s_until' % self.name
+            self._end_point_name = '%s_until' % self._name
         
     def generateDefinition(self, level:int=0) -> Iterator[str]:
         prefix = indent * level
         if self.has_when:
             yield from self._generateWhenDefinition(level)
 
-        yield '%sstate "== %s" as %s' % (prefix, self.task.get_name(), self.name)
-        yield '%s%s : Action **%s**' % (prefix, self.name, self.task.action)
+        yield '%sstate "== %s" as %s' % (prefix, self.task.get_name(), self._name)
+        yield '%s%s : Action **%s**' % (prefix, self._name, self.task.action)
         yield from self._generete_table(self.task.args, level)
         if any((getattr(self.task, attr) is not None for attr in ['become', 'register', 'delegate_to'])):
-            yield '%s%s : ....' % (prefix, self.name)
+            yield '%s%s : ....' % (prefix, self._name)
             yield from self._generateBecomeDefinition(level=level)
             yield from self._generateRegisterDefinition(level=level)
             yield from self._generateDelegateDefinition(level=level)
@@ -93,36 +93,36 @@ class UMLStateTask(UMLStateBase):
                 lines = val.splitlines()
                 if len(lines) > 1:
                     val = '%s ...(+%d lines)' % (lines[0], len(lines)-1)
-            yield '%s%s : | %s | %s |' %(indent*level, self.name, key, val)
+            yield '%s%s : | %s | %s |' %(indent*level, self._name, key, val)
     
     def _generateRegisterDefinition(self, level:int=0) -> Iterator[str]:
         register = self.task.register
         if not register:
             return
-        yield '%s%s : **register** //%s//' % (indent*level, self.name, register)
+        yield '%s%s : **register** //%s//' % (indent*level, self._name, register)
 
     def _generateBecomeDefinition(self, level:int=0) -> Iterator[str]:
         if self.task.become:
             if become_user := self.task.become_user:
-                yield '%s%s : **become** yes (to %s)' % (indent*level, self.name, become_user)
+                yield '%s%s : **become** yes (to %s)' % (indent*level, self._name, become_user)
             else:
-                yield '%s%s : **become** yes' % (indent*level, self.name)
+                yield '%s%s : **become** yes' % (indent*level, self._name)
 
     def _generateDelegateDefinition(self, level:int=0) -> Iterator[str]:
         if val := self.task.delegate_to:
-            yield '%s%s : **delegate_to** %s' % (indent*level, self.name, val)
+            yield '%s%s : **delegate_to** %s' % (indent*level, self._name, val)
 
     def _generateUntilDefinition(self, level:int=0) -> Iterator[str]:
-        yield '%sstate %s <<choice>>' % (indent*level, self.end_point_name)
-        yield '%snote right of %s' % (indent*level, self.end_point_name)
+        yield '%sstate %s <<choice>>' % (indent*level, self._end_point_name)
+        yield '%snote right of %s' % (indent*level, self._end_point_name)
         yield '%s**until**: %s' % (indent*(level+1), self.task.until)
         yield '%s**retres**: %s' % (indent*(level+1), self.task.retries)
         yield '%s**delay**: %s (secconds)' % (indent*(level+1), self.task.delay)
         yield '%send note' % (indent*level)
 
     def _generateWhenDefinition(self, level:int=0) -> Iterator[str]:
-        yield '%sstate %s <<choice>>' % (indent*level, self.entry_point_name)
-        yield '%snote right of %s' % (indent*level, self.entry_point_name)
+        yield '%sstate %s <<choice>>' % (indent*level, self._entry_point_name)
+        yield '%snote right of %s' % (indent*level, self._entry_point_name)
         note_indent = indent * (level+1)
         yield '%s=== when' % note_indent
         yield '%s----' % note_indent
@@ -132,23 +132,23 @@ class UMLStateTask(UMLStateBase):
 
     def generateRelation(self, next: Optional[UMLStateBase] = None) -> Iterator[str]:
         if self.has_when:
-            yield '%s --> %s' % (self.entry_point_name, self.name)
-            yield '%s --> %s' % (self.end_point_name, next.get_entry_point_name())
-            yield '%s --> %s : %s' % (self.entry_point_name, next.get_entry_point_name(), 'skip')
+            yield '%s --> %s' % (self._entry_point_name, self._name)
+            yield '%s --> %s' % (self._end_point_name, next.get_entry_point_name())
+            yield '%s --> %s : %s' % (self._entry_point_name, next.get_entry_point_name(), 'skip')
         else:
-            yield '%s --> %s' % (self.end_point_name, next.get_entry_point_name())
+            yield '%s --> %s' % (self._end_point_name, next.get_entry_point_name())
 
         yield from self._generateLoopRelation()
 
         if self.has_until:
-            yield '%s --> %s' % (self.name, self.end_point_name)
-            yield '%s --> %s : retry' % (self.end_point_name, self.entry_point_name)
+            yield '%s --> %s' % (self._name, self._end_point_name)
+            yield '%s --> %s : retry' % (self._end_point_name, self._entry_point_name)
 
     def _generateLoopRelation(self) -> Iterator[str]:
         if self.task.loop is None:
             return
         loop_name = ('loop(with_%s)' % self.task.loop_with) if self.task.loop_with else 'loop'
-        yield '%s --> %s' % (self.name, self.entry_point_name)
+        yield '%s --> %s' % (self._name, self._entry_point_name)
         yield 'note on link'
         yield '%s=== %s' % (indent, loop_name)
         yield '%s----' % indent
@@ -156,10 +156,10 @@ class UMLStateTask(UMLStateBase):
         yield 'end note'
 
     def get_entry_point_name(self) -> str:
-        return self.entry_point_name
+        return self._entry_point_name
 
     def get_end_point_name(self) -> str:
-        return self.end_point_name
+        return self._end_point_name
 
 class UMLStateBlock(UMLStateBase):
     ID = 1
@@ -167,7 +167,7 @@ class UMLStateBlock(UMLStateBase):
         self.block = block
         self.id = UMLStateBlock.ID
         UMLStateBlock.ID += 1
-        self.name = 'block_%d' % self.id
+        self._name = 'block_%d' % self.id
         self.tasks = self.get_UMLTasks(block.block)
         self.always = self.get_UMLTasks(block.always)
         self.rescue = self.get_UMLTasks(block.rescue)
@@ -193,7 +193,7 @@ class UMLStateBlock(UMLStateBase):
             yield from self._generateWhenDefinition(level)
 
         if is_explicit:
-            yield '%sstate "Block: %s" as %s {' % (prefix, self.block.name, self.name)
+            yield '%sstate "Block: %s" as %s {' % (prefix, self.block.name, self._name)
             next_level+=1
 
         for task in self.tasks:
@@ -205,7 +205,7 @@ class UMLStateBlock(UMLStateBase):
             yield '%s}' % prefix
     
     def _generateWhenDefinition(self, level:int=0) -> Iterator[str]:
-        name = '%s_when'% self.name
+        name = '%s_when'% self._name
         yield '%sstate %s <<choice>>' % (indent*level, name)
         yield '%snote right of %s' % (indent*level, name)
         note_indent = indent * (level+1)
@@ -219,7 +219,7 @@ class UMLStateBlock(UMLStateBase):
         if not self.has_always:
             return
         prefix = indent * level
-        yield '%sstate "Always" as %s {' % (prefix, self.name + '_always')
+        yield '%sstate "Always" as %s {' % (prefix, self._name + '_always')
         for task in self.always:
             yield from task.generateDefinition(level + 1)
         yield '%s}' % prefix
@@ -228,14 +228,14 @@ class UMLStateBlock(UMLStateBase):
         if not self.has_rescue:
             return
         prefix = indent * level
-        yield '%sstate "Rescue" as %s {' % (prefix, self.name + '_rescue')
+        yield '%sstate "Rescue" as %s {' % (prefix, self._name + '_rescue')
         for task in self.rescue:
             yield from task.generateDefinition(level + 1)
         yield '%s}' % prefix
     
     def get_entry_point_name(self) -> str:
         if self.has_when:
-            return self.name + '_when'
+            return self._name + '_when'
         return self.tasks[0].get_entry_point_name()
 
     def get_end_point_name(self) -> str:
@@ -246,7 +246,7 @@ class UMLStateBlock(UMLStateBase):
     def generateRelation(self, next:UMLStateBase) -> Iterator[str]:
         if self.has_when:
             #yield '%s' % self.when
-            yield '%s --> %s' % (self.name + '_when', self.tasks[0].get_entry_point_name())
+            yield '%s --> %s' % (self._name + '_when', self.tasks[0].get_entry_point_name())
             yield '%s --> %s : %s' % (self.get_entry_point_name(), next.get_entry_point_name(), 'skip')
 
         for current_state, next_state in pair_state_iter(*self.tasks, *self.always, next):
@@ -274,7 +274,7 @@ class UMLStatePlay(UMLStateBase):
         self.play = play
         self.id = UMLStatePlay.ID
         UMLStatePlay.ID += 1
-        self.name = 'play_%d' % self.id
+        self._name = 'play_%d' % self.id
         self.pre_tasks = [UMLStateBlock(block) for block in play.pre_tasks]
         self.roles = [UMLStateBlock(block) for role in play.roles if not role.from_include for block in role.get_task_blocks()]
         self.tasks = [UMLStateBlock(block) for block in play.tasks]
@@ -290,7 +290,7 @@ class UMLStatePlay(UMLStateBase):
         if len(self.play.vars_prompt) > 0:
             key_name = 'vars_files'
             for var_file in self.play.vars_files:
-                yield '%s%s : | %s | %s |' % (indent*level, self.name, key_name, var_file)
+                yield '%s%s : | %s | %s |' % (indent*level, self._name, key_name, var_file)
                 key_name = ''
 
     def _generateVarsPromptDefinition(self, level:int=0) -> Iterator[str]:
@@ -300,17 +300,17 @@ class UMLStatePlay(UMLStateBase):
         if len(self.play.vars_prompt) > 0:
             key_name = 'vars_prompt'
             for prompt in self.play.vars_prompt:
-                yield '%s%s : | %s | %s |' % (indent*level, self.name, key_name, prompt['name'])
+                yield '%s%s : | %s | %s |' % (indent*level, self._name, key_name, prompt['name'])
                 key_name = ''
 
     def generateDefinition(self, level:int=0) -> Iterator[str]:
-        yield '%sstate "= Play: %s" as %s {' % (indent*level, self.play.get_name(), self.name)
+        yield '%sstate "= Play: %s" as %s {' % (indent*level, self.play.get_name(), self._name)
         for key in ['hosts', 'gather_facts', 'strategy', 'serial']:
             val = self.play._attributes[key]
             if val is Sentinel:
                 continue
 
-            yield '%s%s : | %s | %s |' % (indent*(level+1), self.name, key, val)
+            yield '%s%s : | %s | %s |' % (indent*(level+1), self._name, key, val)
 
         yield from self._generateVarsFilesDefition(level=level+1)
         yield from self._generateVarsPromptDefinition(level=level+1)
