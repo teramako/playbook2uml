@@ -5,7 +5,6 @@ from argparse import Namespace
 from typing import Iterator, Optional, Tuple
 from abc import ABCMeta, abstractmethod
 
-from ansible.playbook import Playbook
 from ansible.parsing.dataloader import DataLoader
 from ansible.vars.manager import VariableManager
 from ansible.playbook import Playbook
@@ -35,7 +34,7 @@ class UMLStateBase(metaclass=ABCMeta):
         pass
 
     def get_when_list(self, task) -> list[str]:
-        when = task._attributes['when']
+        when = task.when
         if when is Sentinel:
             return []
         elif isinstance(when, list):
@@ -305,12 +304,13 @@ class UMLStatePlay(UMLStateBase):
 
     def generateDefinition(self, level:int=0) -> Iterator[str]:
         yield '%sstate "= Play: %s" as %s {' % (indent*level, self.play.get_name(), self._name)
-        for key in ['hosts', 'gather_facts', 'strategy', 'serial']:
-            val = self.play._attributes[key]
-            if val is Sentinel:
-                continue
+        for key in dir(self.play):
+            if key in ['hosts', 'gather_facts', 'strategy', 'serial']:
+                val = getattr(self.play, key)
+                if val is Sentinel:
+                    continue
 
-            yield '%s%s : | %s | %s |' % (indent*(level+1), self._name, key, val)
+                yield '%s%s : | %s | %s |' % (indent*(level+1), self._name, key, val)
 
         yield from self._generateVarsFilesDefition(level=level+1)
         yield from self._generateVarsPromptDefinition(level=level+1)
