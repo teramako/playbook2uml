@@ -170,7 +170,6 @@ class UMLStateBlock(UMLStateBase):
     def __init__(self, block:Block) -> None:
         self.block = block
         self.id = UMLStateBlock.ID
-        UMLStateBlock.ID += 1
         self._name = 'block_%d' % self.id
         self.tasks = self.get_UMLTasks(block.block)
         self.always = self.get_UMLTasks(block.always)
@@ -179,12 +178,24 @@ class UMLStateBlock(UMLStateBase):
         self.has_always = len(self.always) > 0
         self.has_rescue = len(self.rescue) > 0
         self.has_when = len(self.when) > 0
+        if len(self.tasks) > 0: # increment only when the block is avilable
+            UMLStateBlock.ID += 1
 
     def get_UMLTasks(self, tasks) -> list[UMLStateBase]:
         results = []
         for task in tasks:
             if isinstance(task, Block):
-                results.append(UMLStateBlock(task))
+                blockState = UMLStateBlock(task)
+                if len(blockState.tasks) == 0:
+                    # When the block is added implicitly, length of the tasks will be 0.
+                    # need to skip appending to results
+                    continue
+
+                results.append(blockState)
+            elif getattr(task, 'implicit', False):
+                # Skip when the tasks is implicit `role_complete` block
+                # See: https://github.com/ansible/ansible/commit/1b70260d5aa2f6c9782fd2b848e8d16566e50d85
+                continue
             else:
                 results.append(UMLStateTask(task))
         return results
