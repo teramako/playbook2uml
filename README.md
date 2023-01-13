@@ -1,7 +1,34 @@
 # playbook2uml
-Ansible-playbook to PlantUML
+Ansible-playbook/role to PlantUML
 
 ## Usage
+
+```
+usage:
+    playbook2uml [options] PLAYBOOK
+    playbook2uml [options] -R ROLE_NAME [BASE_DIR]
+
+
+Ansible-playbook to PlantuML
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -T TITLE, --title TITLE
+                        The title of the playbook/role
+  --theme THEME         PlantUML theme
+  --left-to-right       left to right direction
+
+Playbook:
+  Generate a graph of the playbook
+
+  PLAYBOOK              playbook file
+
+Role:
+  Generate a graph of the role only
+
+  -R ROLE, --role ROLE  The role name
+  BASE_DIR              The base directory.[default=current directory]
+```
 
 The PlantUML code is out to stdout.
 ```console
