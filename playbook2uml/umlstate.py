@@ -307,23 +307,26 @@ class UMLStatePlay(UMLStateBase):
                 yield '%s%s : | %s | %s |' % (indent*level, self._name, key_name, prompt['name'])
                 key_name = ''
 
-    def generateDefinition(self, level:int=0) -> Iterator[str]:
-        yield '%sstate "= Play: %s" as %s {' % (indent*level, self.play.get_name(), self._name)
-        for key in dir(self.play):
-            if key in ['hosts', 'gather_facts', 'strategy', 'serial']:
-                val = getattr(self.play, key)
-                if val is Sentinel:
-                    continue
+    def generateDefinition(self, level:int=0, only_role=False) -> Iterator[str]:
+        if not only_role:
+            yield '%sstate "= Play: %s" as %s {' % (indent*level, self.play.get_name(), self._name)
+            level += 1
+            for key in dir(self.play):
+                if key in ['hosts', 'gather_facts', 'strategy', 'serial']:
+                    val = getattr(self.play, key)
+                    if val is Sentinel:
+                        continue
 
-                yield '%s%s : | %s | %s |' % (indent*(level+1), self._name, key, val)
+                    yield '%s%s : | %s | %s |' % (indent*level, self._name, key, val)
 
-        yield from self._generateVarsFilesDefition(level=level+1)
-        yield from self._generateVarsPromptDefinition(level=level+1)
+            yield from self._generateVarsFilesDefition(level=level)
+            yield from self._generateVarsPromptDefinition(level=level)
 
         for tasks in self.get_all_tasks():
-            yield from tasks.generateDefinition(level+1)
+            yield from tasks.generateDefinition(level)
 
-        yield '%s}' % (indent*level)
+        if not only_role:
+            yield '%s}' % (indent*(level-1))
 
     def generateRelation(self, next_play:UMLStatePlay=None) -> Iterator[str]:
         for current_state, next_state in pair_state_iter(*self.get_all_tasks(), next_play):
@@ -339,8 +342,34 @@ class UMLStatePlaybook:
     def __init__(self, playbook:str, option:Namespace=None):
         dataloader = DataLoader()
         variable_manager = VariableManager(loader=dataloader)
-        self.playbook = Playbook.load(playbook, loader=dataloader, variable_manager=variable_manager)
-        self.plays = [UMLStatePlay(play) for play in self.playbook.get_plays()]
+        pb = Playbook(loader=dataloader)
+        if option.role:
+            '''
+            For only role mode.
+            Load a dummy play data which imports the role only.
+            '''
+            role_name = option.role
+            dummy_play = {
+                'hosts': 'all',
+                'tasks': [
+                    {
+                        'import_role': {
+                            'name': role_name
+                        }
+                    }
+                ]
+            }
+            pb._loader.set_basedir(option.BASE_DIR)
+            self.plays = [
+                UMLStatePlay(Play.load(dummy_play, variable_manager=variable_manager, loader=pb._loader, vars=None))
+            ]
+        else:
+            '''
+            For whole of the playbook.
+            '''
+            pb._load_playbook_data(file_name=playbook, variable_manager=variable_manager)
+            self.plays = [UMLStatePlay(play) for play in pb.get_plays()]
+
         self.options = option
 
     def generate(self) -> Iterator[str]:
@@ -355,8 +384,10 @@ class UMLStatePlaybook:
                 yield '!theme %s' % theme
             if self.options.left_to_right:
                 yield 'left to right direction'
+
+            only_role = self.options.role != ''
             for umlplay in self.plays:
-                yield from umlplay.generateDefinition()
+                yield from umlplay.generateDefinition(only_role=only_role)
 
         start_end = UMLStateStart()
         for current_state, next_state in pair_state_iter(start_end, *self.plays, start_end):
