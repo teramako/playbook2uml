@@ -151,7 +151,12 @@ class UMLStateTask(UMLStateBase):
         yield 'note on link'
         yield '%s=== %s' % (indent, loop_name)
         yield '%s----' % indent
-        yield '%s%s' % (indent, self.task.loop)
+        # loops can either be a string (one-item loop) or a list
+        if isinstance(self.task.loop, list):
+            for loop_item in self.task.loop:
+                yield '%s- %s' % (indent, loop_item)
+        else:
+            yield '%s- %s' % (indent, self.task.loop)
         yield 'end note'
 
     def get_entry_point_name(self) -> str:
