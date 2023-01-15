@@ -387,6 +387,7 @@ class UMLStatePlaybook:
         '''
         Generate PlantUML codes
         '''
+        only_role = False
         yield '@startuml'
         if self.options:
             if title := self.options.title:
@@ -397,8 +398,9 @@ class UMLStatePlaybook:
                 yield 'left to right direction'
 
             only_role = self.options.role != ''
-            for umlplay in self.plays:
-                yield from umlplay.generateDefinition(only_role=only_role)
+
+        for umlplay in self.plays:
+            yield from umlplay.generateDefinition(only_role=only_role)
 
         start_end = UMLStateStart()
         for current_state, next_state in pair_state_iter(start_end, *self.plays, start_end):
