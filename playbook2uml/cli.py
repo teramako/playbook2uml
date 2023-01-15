@@ -24,7 +24,7 @@ def parse_args(args: list[str]):
     playbook_group.add_argument('PLAYBOOK', nargs='?', default='.', type=str, help='playbook file')
 
     role_group = ap.add_argument_group('Role', 'Generate a graph of the role only')
-    role_group.add_argument('-R', '--role', type=str, help='The role name')
+    role_group.add_argument('-R', '--role', type=str, default='', help='The role name')
     role_group.add_argument('BASE_DIR', nargs='?', help='The base directory.[default=current directory]')
 
     option = ap.parse_args(args)
