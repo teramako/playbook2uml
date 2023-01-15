@@ -4,6 +4,7 @@ from __future__ import (absolute_import, division, print_function, annotations)
 from argparse import Namespace
 from typing import Iterator, Optional, Tuple
 from abc import ABCMeta, abstractmethod
+from playbook2uml.logger import getLogger
 
 from ansible.parsing.dataloader import DataLoader
 from ansible.vars.manager import VariableManager
@@ -15,6 +16,7 @@ from ansible.utils.sentinel import Sentinel
 __metaclass__ = type
 
 indent = '    '
+logger = getLogger(__name__)
 
 class UMLStateBase(metaclass=ABCMeta):
     @abstractmethod
@@ -33,6 +35,9 @@ class UMLStateBase(metaclass=ABCMeta):
     def get_end_point_name(self) -> str:
         pass
 
+    def __str__(self) -> str:
+        return f"<{self.__class__.__name__}({self._name})>"
+
     def get_when_list(self, task) -> list[str]:
         when = task.when
         if when is Sentinel:
@@ -50,25 +55,33 @@ def pair_state_iter(*args) -> Iterator[Tuple[UMLStateBase, UMLStateBase]]:
 
 class UMLStateTask(UMLStateBase):
     ID = 1
+    logger = logger.getChild("UMLStateTask")
     def __init__(self, task:Task) -> None:
+        self.logger.debug('start')
         self.task = task
         self.id = UMLStateTask.ID
         UMLStateTask.ID += 1
 
         self._name = 'task_%d' % self.id
+        self.logger.debug(f'set name "{self._name}"')
         self._entry_point_name = self._name
         self._end_point_name = self._name
         self.when = self.get_when_list(self.task)
         self.has_when = len(self.when) > 0
         if self.has_when:
             self._entry_point_name = '%s_when' % self._name
+            self.logger.debug(f'{self._name} has `when`. set `_entry_point_name "{self._entry_point_name}"')
 
         self.has_until = False
         if self.task.until:
             self.has_until = True
             self._end_point_name = '%s_until' % self._name
+            self.logger.debug(f'{self._name} has `until`. set `_end_point_name "{self._end_point_name}"')
+
+        self.logger.debug('end')
         
     def generateDefinition(self, level:int=0) -> Iterator[str]:
+        self.logger.debug(f'start {self}')
         prefix = indent * level
         if self.has_when:
             yield from self._generateWhenDefinition(level)
@@ -84,6 +97,8 @@ class UMLStateTask(UMLStateBase):
 
         if self.has_until:
             yield from self._generateUntilDefinition(level)
+
+        self.logger.debug(f'end {self}')
 
     def _generete_table(self, obj:dict, level:int=0) -> Iterator[str]:
         for key in obj:
@@ -130,6 +145,7 @@ class UMLStateTask(UMLStateBase):
         yield '%send note' % (indent*level)
 
     def generateRelation(self, next: Optional[UMLStateBase] = None) -> Iterator[str]:
+        self.logger.debug(f'start {self}')
         if self.has_when:
             yield '%s --> %s' % (self._entry_point_name, self._name)
             yield '%s --> %s' % (self._end_point_name, next.get_entry_point_name())
@@ -142,6 +158,8 @@ class UMLStateTask(UMLStateBase):
         if self.has_until:
             yield '%s --> %s' % (self._name, self._end_point_name)
             yield '%s --> %s : retry' % (self._end_point_name, self._entry_point_name)
+
+        self.logger.debug(f'end {self}')
 
     def _generateLoopRelation(self) -> Iterator[str]:
         if self.task.loop is None:
@@ -167,7 +185,9 @@ class UMLStateTask(UMLStateBase):
 
 class UMLStateBlock(UMLStateBase):
     ID = 1
+    logger = logger.getChild('UMLStateBlock')
     def __init__(self, block:Block) -> None:
+        self.logger.debug('start')
         self.block = block
         self.id = UMLStateBlock.ID
         self._name = 'block_%d' % self.id
@@ -181,6 +201,8 @@ class UMLStateBlock(UMLStateBase):
         if len(self.tasks) > 0: # increment only when the block is avilable
             UMLStateBlock.ID += 1
 
+        self.logger.debug('end')
+
     def get_UMLTasks(self, tasks) -> list[UMLStateBase]:
         results = []
         for task in tasks:
@@ -192,15 +214,19 @@ class UMLStateBlock(UMLStateBase):
                     continue
 
                 results.append(blockState)
+                self.logger.debug(f'append {blockState}')
             elif getattr(task, 'implicit', False):
                 # Skip when the tasks is implicit `role_complete` block
                 # See: https://github.com/ansible/ansible/commit/1b70260d5aa2f6c9782fd2b848e8d16566e50d85
                 continue
             else:
-                results.append(UMLStateTask(task))
+                taskState = UMLStateTask(task)
+                results.append(taskState)
+                self.logger.debug(f'append {taskState}')
         return results
 
     def generateDefinition(self, level:int=0) -> Iterator[str]:
+        self.logger.debug(f'start {self}')
         is_explicit = self.block.name or self.has_always or self.has_rescue
         next_level = level
         prefix = indent * level
@@ -218,6 +244,8 @@ class UMLStateBlock(UMLStateBase):
             yield from self._generateAlwaysDefinition(next_level)
             yield from self._generateRescueDefinition(next_level)
             yield '%s}' % prefix
+
+        self.logger.debug(f'end {self}')
     
     def _generateWhenDefinition(self, level:int=0) -> Iterator[str]:
         name = '%s_when'% self._name
@@ -259,6 +287,7 @@ class UMLStateBlock(UMLStateBase):
         return self.tasks[-1].get_end_point_name()
 
     def generateRelation(self, next:UMLStateBase) -> Iterator[str]:
+        self.logger.debug(f'start {self}')
         if self.has_when:
             #yield '%s' % self.when
             yield '%s --> %s' % (self._name + '_when', self.tasks[0].get_entry_point_name())
@@ -272,11 +301,16 @@ class UMLStateBlock(UMLStateBase):
             for current_state, next_state in states:
                 yield from current_state.generateRelation(next_state)
 
+        self.logger.debug(f'end {self}')
+
 class UMLStateStart(UMLStateBase):
+    logger = logger.getChild('UMLStateStart')
     def generateDefinition(self, level: int = 0) -> Iterator[str]:
         return
     def generateRelation(self, next:UMLStateBase) -> Iterator[str]:
+        self.logger.debug('start')
         yield '[*] --> %s' % next.get_entry_point_name()
+        self.logger.debug('end')
     def get_entry_point_name(self) -> str:
         return '[*]'
     def get_end_point_name(self) -> str:
@@ -285,7 +319,9 @@ class UMLStateStart(UMLStateBase):
 
 class UMLStatePlay(UMLStateBase):
     ID = 1
+    logger = logger.getChild('UMLStatePlay')
     def __init__(self, play:Play) -> None:
+        self.logger.debug('start')
         self.play = play
         self.id = UMLStatePlay.ID
         UMLStatePlay.ID += 1
@@ -294,6 +330,7 @@ class UMLStatePlay(UMLStateBase):
         self.roles = [UMLStateBlock(block) for role in play.roles if not role.from_include for block in role.get_task_blocks()]
         self.tasks = [UMLStateBlock(block) for block in play.tasks]
         self.post_tasks = [UMLStateBlock(block) for block in play.post_tasks]
+        self.logger.debug('end')
 
     def get_all_tasks(self) -> list[UMLStateBase]:
         return self.pre_tasks + self.roles + self.tasks + self.post_tasks
@@ -319,6 +356,7 @@ class UMLStatePlay(UMLStateBase):
                 key_name = ''
 
     def generateDefinition(self, level:int=0, only_role=False) -> Iterator[str]:
+        self.logger.debug(f'start {self}')
         if not only_role:
             yield '%sstate "= Play: %s" as %s {' % (indent*level, self.play.get_name(), self._name)
             level += 1
@@ -339,9 +377,14 @@ class UMLStatePlay(UMLStateBase):
         if not only_role:
             yield '%s}' % (indent*(level-1))
 
+        self.logger.debug(f'end {self}')
+
     def generateRelation(self, next_play:UMLStatePlay=None) -> Iterator[str]:
+        self.logger.debug(f'start {self}')
         for current_state, next_state in pair_state_iter(*self.get_all_tasks(), next_play):
             yield from current_state.generateRelation(next_state)
+
+        self.logger.debug(f'end {self}')
 
     def get_entry_point_name(self) -> str:
         return self.get_all_tasks()[0].get_entry_point_name()
@@ -350,7 +393,9 @@ class UMLStatePlay(UMLStateBase):
         return self.get_all_tasks()[-1].get_end_point_name()
 
 class UMLStatePlaybook:
+    logger = logger.getChild('UMLStatePlaybook')
     def __init__(self, playbook:str, option:Namespace=None):
+        self.logger.debug('start')
         dataloader = DataLoader()
         variable_manager = VariableManager(loader=dataloader)
         pb = Playbook(loader=dataloader)
@@ -370,6 +415,7 @@ class UMLStatePlaybook:
                     }
                 ]
             }
+            self.logger.debug(f'load dummy play: {dummy_play}')
             pb._loader.set_basedir(option.BASE_DIR)
             self.plays = [
                 UMLStatePlay(Play.load(dummy_play, variable_manager=variable_manager, loader=pb._loader, vars=None))
@@ -378,6 +424,7 @@ class UMLStatePlaybook:
             '''
             For whole of the playbook.
             '''
+            self.logger.debug(f'load playbook: {playbook}')
             pb._load_playbook_data(file_name=playbook, variable_manager=variable_manager)
             self.plays = [UMLStatePlay(play) for play in pb.get_plays()]
 
@@ -387,23 +434,32 @@ class UMLStatePlaybook:
         '''
         Generate PlantUML codes
         '''
+        self.logger.info('START')
         only_role = False
         yield '@startuml'
         if self.options:
             if title := self.options.title:
+                self.logger.debug(f'set title "{title}"')
                 yield 'title %s' % title
             if theme := self.options.theme:
+                self.logger.debug(f'set theme "{theme}"')
                 yield '!theme %s' % theme
             if self.options.left_to_right:
+                self.logger.debug(f'set left-to-right-direction')
                 yield 'left to right direction'
 
             only_role = self.options.role != ''
 
+        self.logger.info(f'START generate definitions (role-mode={only_role})')
         for umlplay in self.plays:
             yield from umlplay.generateDefinition(only_role=only_role)
+        self.logger.info('END generate definitions')
 
+        self.logger.info(f'START generate relations (role-mode={only_role})')
         start_end = UMLStateStart()
         for current_state, next_state in pair_state_iter(start_end, *self.plays, start_end):
             yield from current_state.generateRelation(next_state)
+        self.logger.info('END generate relations')
 
         yield '@enduml'
+        self.logger.info('END')

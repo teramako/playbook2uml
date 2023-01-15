@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import (absolute_import, division, print_function, annotations)
 from argparse import ArgumentParser
-from playbook2uml.umlstate import UMLStatePlaybook
+from playbook2uml import umlstate, logger as umlLogger
 import sys
 import os.path
 
@@ -14,6 +14,11 @@ def parse_args(args: list[str]):
     ap.add_argument('-T', '--title', type=str, help='The title of the playbook/role')
     ap.add_argument('--theme', type=str, default=None, help='PlantUML theme')
     ap.add_argument('--left-to-right', action='store_true', help='left to right direction')
+    ap.add_argument('-v', '--verbose', action="count", default=0, help='''
+        Show information to STDERR.
+        -v  => INFO
+        -vv => DEBUG
+    ''')
 
     playbook_group = ap.add_argument_group('Playbook', 'Generate a graph of the playbook')
     playbook_group.add_argument('PLAYBOOK', nargs='?', default='.', type=str, help='playbook file')
@@ -37,9 +42,16 @@ def main():
     '''main'''
     option = parse_args(sys.argv[1:])
 
-    umlplaybook = UMLStatePlaybook(option.PLAYBOOK, option=option)
+    logger = umlLogger.getLogger(__name__, option.verbose)
+    umlLogger.setLoggerLevel(umlstate.logger, option.verbose)
+
+    logger.debug("START")
+
+    umlplaybook = umlstate.UMLStatePlaybook(option.PLAYBOOK, option=option)
     for line in umlplaybook.generate():
         print(line)
+
+    logger.debug("END")
 
 if __name__ == '__main__':
     main()

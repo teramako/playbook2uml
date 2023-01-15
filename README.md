@@ -9,7 +9,7 @@ usage:
     playbook2uml [options] -R ROLE_NAME [BASE_DIR]
 
 
-Ansible-playbook to PlantuML
+Ansible playbook/role to PlantUML
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -17,6 +17,7 @@ optional arguments:
                         The title of the playbook/role
   --theme THEME         PlantUML theme
   --left-to-right       left to right direction
+  -v, --verbose         Show information to STDERR. -v => INFO -vv => DEBUG
 
 Playbook:
   Generate a graph of the playbook

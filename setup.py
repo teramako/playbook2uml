@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='playbook2uml',
-    version='0.2',
+    version='0.2.1',
     description='Create a PlantUML State Diagram from Ansible-Playbook/role',
     author='teramako',
     author_email='teramako@gmail.com',
