@@ -3,11 +3,11 @@
 from __future__ import (absolute_import, division, print_function, annotations)
 from argparse import ArgumentParser
 from playbook2uml.umlstate import UMLStatePlaybook
+import sys
 import os.path
 
-def main():
-    '''main'''
-    ap = ArgumentParser(description='Ansible playbook/role to PlantuML', usage='''
+def parse_args(args: list[str]):
+    ap = ArgumentParser(prog='playbook2uml' ,description='Ansible playbook/role to PlantUML', usage='''
     %(prog)s [options] PLAYBOOK
     %(prog)s [options] -R ROLE_NAME [BASE_DIR]
     ''')
@@ -22,16 +22,22 @@ def main():
     role_group.add_argument('-R', '--role', type=str, help='The role name')
     role_group.add_argument('BASE_DIR', nargs='?', help='The base directory.[default=current directory]')
 
-    args = ap.parse_args()
+    option = ap.parse_args(args)
 
-    if args.role:
-        args.BASE_DIR = args.PLAYBOOK
-        if not os.path.isdir(args.BASE_DIR):
+    if option.role:
+        option.BASE_DIR = option.PLAYBOOK
+        if not os.path.isdir(option.BASE_DIR):
             ap.error('BASE_DIR must be a directory.')
-    elif not os.path.isfile(args.PLAYBOOK):
+    elif not os.path.isfile(option.PLAYBOOK):
         ap.error('PLAYBOOK must be a file.')
 
-    umlplaybook = UMLStatePlaybook(args.PLAYBOOK, option=args)
+    return option
+
+def main():
+    '''main'''
+    option = parse_args(sys.argv[1:])
+
+    umlplaybook = UMLStatePlaybook(option.PLAYBOOK, option=option)
     for line in umlplaybook.generate():
         print(line)
 
