@@ -25,6 +25,7 @@ def parse_args(args: list[str]):
 
     role_group = ap.add_argument_group('Role', 'Generate a graph of the role only')
     role_group.add_argument('-R', '--role', type=str, default='', help='The role name')
+    role_group.add_argument('--tasks-from', type=str, default='main', help='File to load from a role\'s tasks/ directory.')
     role_group.add_argument('BASE_DIR', nargs='?', help='The base directory.[default=current directory]')
 
     option = ap.parse_args(args)
