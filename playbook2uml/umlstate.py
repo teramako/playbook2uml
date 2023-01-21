@@ -410,7 +410,8 @@ class UMLStatePlaybook:
                 'tasks': [
                     {
                         'import_role': {
-                            'name': role_name
+                            'name': role_name,
+                            'tasks_from': option.tasks_from
                         }
                     }
                 ]

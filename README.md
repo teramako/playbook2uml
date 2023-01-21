@@ -28,6 +28,8 @@ Role:
   Generate a graph of the role only
 
   -R ROLE, --role ROLE  The role name
+  --tasks-from TASKS_FROM
+                        File to load from a role's tasks/ directory.
   BASE_DIR              The base directory.[default=current directory]
 ```
 
