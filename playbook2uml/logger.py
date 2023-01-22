@@ -1,4 +1,5 @@
 import logging
+import sys
 
 LEVEL = ['WARNING', 'INFO', 'DEBUG']
 
@@ -16,7 +17,12 @@ def getLogger(name: str, verbose: int = 0) -> logging.Logger:
     logger = logging.getLogger(name)
     setLoggerLevel(logger, verbose)
 
-    formatter = logging.Formatter(f"{yellow}playbook2uml/%(filename)s:%(lineno)-3d{reset}: [%(name)s.%(funcName)s] %(message)s")
+    if sys.stderr.isatty():
+        format = f'{yellow}playbook2uml/%(filename)s:%(lineno)d{reset}:{cyan}[%(name)s.%(funcName)s]{reset} %(message)s'
+    else:
+        format = f'playbook2uml/%(filename)s:%(lineno)d:[%(name)s.%(funcName)s] %(message)s'
+
+    formatter = logging.Formatter(format)
 
     handler = logging.StreamHandler()
     handler.setLevel(logging.DEBUG)
