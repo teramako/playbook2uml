@@ -396,6 +396,9 @@ class UMLStatePlaybook:
     logger = logger.getChild('UMLStatePlaybook')
     def __init__(self, playbook:str, option:Namespace=None):
         self.logger.debug('start')
+        UMLStatePlay.ID = 1
+        UMLStateBlock.ID = 1
+        UMLStateTask.ID = 1
         dataloader = DataLoader()
         variable_manager = VariableManager(loader=dataloader)
         pb = Playbook(loader=dataloader)
