@@ -32,6 +32,6 @@ class Test_PLAYBOOK(unittest.TestCase):
                 book = umlstate.UMLStatePlaybook(args.PLAYBOOK, option=args)
                 result_lines = [line for line in book.generate()]
                 with open(case[1], 'r') as f:
-                    expect_lines = f.read().split('\n')[0:-1]
+                    expect_lines = f.read().strip().splitlines()
 
                 self.assertListEqual(result_lines, expect_lines)
