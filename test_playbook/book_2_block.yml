@@ -1,0 +1,30 @@
+- name: Test 2 block
+  hosts: localhost
+
+  tasks:
+    - name: Begin
+      file:
+        path: /path/to/dir
+        state: directory
+
+    - name: Block Name
+      block:
+        - name: Second
+          debug:
+            msg: "Second Task"
+
+      rescue:
+        - name: Rescue Task 1
+          debug:
+            msg: "Rescue Task 1"
+
+      always:
+        - name: Always Task
+          debug:
+            msg: "Always Task 1"
+
+    - name: End
+      debug:
+        msg: "End"
+
+

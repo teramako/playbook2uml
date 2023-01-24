@@ -1,0 +1,36 @@
+@startuml
+state "= Play: Test 2 block" as play_1 {
+    play_1 : | gather_facts | None |
+    play_1 : | hosts | localhost |
+    play_1 : | serial | [] |
+    play_1 : | strategy | linear |
+    state "== Begin" as task_1
+    task_1 : Action **file**
+    task_1 : | path | /path/to/dir |
+    task_1 : | state | directory |
+    state "Block: Block Name" as block_1 {
+        state "== Second" as task_2
+        task_2 : Action **debug**
+        task_2 : | msg | Second Task |
+        state "Always" as block_1_always {
+            state "== Always Task" as task_3
+            task_3 : Action **debug**
+            task_3 : | msg | Always Task 1 |
+        }
+        state "Rescue" as block_1_rescue {
+            state "== Rescue Task 1" as task_4
+            task_4 : Action **debug**
+            task_4 : | msg | Rescue Task 1 |
+        }
+    }
+    state "== End" as task_5
+    task_5 : Action **debug**
+    task_5 : | msg | End |
+}
+[*] --> task_1
+task_1 --> task_2
+task_2 --> task_3
+task_3 --> task_5
+task_4 --> task_3
+task_5 --> [*]
+@enduml
