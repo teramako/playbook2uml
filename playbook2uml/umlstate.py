@@ -191,6 +191,7 @@ class UMLStateBlock(UMLStateBase):
     @classmethod
     def load(cls, block:Block) -> Iterator[UMLStateBlock | UMLStateTask]:
         if block.name or len(block.always) > 0 or len(block.rescue) > 0:
+            cls.logger.debug(f'load block as explicit: {cls.ID}')
             yield UMLStateBlock(block)
         else:
             cls.logger.debug(f'load block as implicit')
@@ -198,6 +199,7 @@ class UMLStateBlock(UMLStateBase):
                 if isinstance(task, Block):
                     yield from UMLStateBlock.load(task)
                 elif getattr(task, 'implicit', False):
+                    cls.logger.debug(f'skip: {task.get_name()} is implicit')
                     continue
                 else:
                     yield UMLStateTask(task)
@@ -208,6 +210,7 @@ class UMLStateBlock(UMLStateBase):
             if isinstance(task, Block):
                 yield from cls.load(task)
             elif getattr(task, 'implicit', False):
+                cls.logger.debug(f'skip: {task.get_name()} is implicit')
                 # Skip when the tasks is implicit `role_complete` block
                 # See: https://github.com/ansible/ansible/commit/1b70260d5aa2f6c9782fd2b848e8d16566e50d85
                 continue
@@ -335,6 +338,10 @@ class UMLStatePlay(UMLStateBase):
         self.roles = tuple(UMLStateBlock.load_tasks(block for role in play.roles if not role.from_include for block in role.get_task_blocks()))
         self.tasks = tuple(UMLStateBlock.load_tasks(play.tasks))
         self.post_tasks = tuple(UMLStateBlock.load_tasks(play.post_tasks))
+        self.logger.debug(f'{self}: {len(self.pre_tasks)} pre_tasks: {[str(t) for t in self.pre_tasks]}')
+        self.logger.debug(f'{self}: {len(self.roles)} roles: {[str(t) for t in self.roles]}')
+        self.logger.debug(f'{self}: {len(self.tasks)} tasks: {[str(t) for t in self.tasks]}')
+        self.logger.debug(f'{self}: {len(self.post_tasks)} post_tasks: {[str(t) for t in self.post_tasks]}')
         self.logger.debug('end')
 
     def get_all_tasks(self) -> list[UMLStateBase]:
