@@ -1,0 +1,7 @@
+- name: Role Start
+  debug:
+    msg: "Start role_1"
+
+- name: Role End
+  debug:
+    msg: "End role_1"
