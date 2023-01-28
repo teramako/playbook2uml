@@ -23,6 +23,13 @@
           debug:
             msg: "Always Task 1"
 
+    - name: Block when
+      when: true
+      block:
+        - name: do when the condition is `true`
+          debug:
+            msg: "Third Task"
+
     - name: End
       debug:
         msg: "End"
