@@ -1,0 +1,17 @@
+- name: Test 4 import_role
+  hosts: localhost
+
+  tasks:
+    - name: Begin
+      debug:
+        msg: "Start"
+
+    - name: import role role_1
+      import_role:
+        name: role_1
+
+    - name: End
+      debug:
+        msg: "End"
+
+

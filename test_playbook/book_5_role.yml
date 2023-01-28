@@ -1,0 +1,15 @@
+- name: Test 5 role
+  hosts: localhost
+
+  pre_tasks:
+    - name: pre
+      debug:
+        msg: "pre"
+
+  roles:
+    - role_1
+
+  post_tasks:
+    - name: post
+      debug:
+        msg: "post"

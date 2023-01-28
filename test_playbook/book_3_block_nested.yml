@@ -1,0 +1,26 @@
+- name: Test 3 nested block
+  hosts: localhost
+
+  tasks:
+    - name: Begin
+      file:
+        path: /path/to/dir
+        state: directory
+
+    - name: Block Name
+      block:
+        - name: Second
+          debug:
+            msg: "Second Task"
+
+        - name: Nested block
+          block:
+            - name: Thrid
+              debug:
+                msg: "Third Task"
+
+    - name: End
+      debug:
+        msg: "End"
+
+

@@ -1,0 +1,13 @@
+@startuml
+state "= Play: Test 1" as play_1 {
+    play_1 : | gather_facts | None |
+    play_1 : | hosts | all |
+    play_1 : | serial | [] |
+    play_1 : | strategy | linear |
+    state "== debug" as task_1
+    task_1 : Action **debug**
+    task_1 : | msg | Test 1 |
+}
+[*] --> task_1
+task_1 --> [*]
+@enduml
