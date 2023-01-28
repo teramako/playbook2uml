@@ -3,6 +3,7 @@
 from __future__ import (absolute_import, division, print_function, annotations)
 from argparse import Namespace
 from typing import Iterator, Optional, Tuple
+from collections.abc import Iterable
 from abc import ABCMeta, abstractmethod
 from playbook2uml.logger import getLogger
 
@@ -186,44 +187,48 @@ class UMLStateTask(UMLStateBase):
 class UMLStateBlock(UMLStateBase):
     ID = 1
     logger = logger.getChild('UMLStateBlock')
-    def __init__(self, block:Block) -> None:
-        self.logger.debug('start')
-        self.block = block
-        self.id = UMLStateBlock.ID
-        self._name = 'block_%d' % self.id
-        self.tasks = self.get_UMLTasks(block.block)
-        self.always = self.get_UMLTasks(block.always)
-        self.rescue = self.get_UMLTasks(block.rescue)
-        self.when = self.get_when_list(block)
-        self.has_always = len(self.always) > 0
-        self.has_rescue = len(self.rescue) > 0
-        self.has_when = len(self.when) > 0
-        if len(self.tasks) > 0: # increment only when the block is avilable
-            UMLStateBlock.ID += 1
 
-        self.logger.debug('end')
+    @classmethod
+    def load(cls, block:Block) -> Iterator[UMLStateBlock | UMLStateTask]:
+        if block.name or len(block.always) > 0 or len(block.rescue) > 0:
+            yield UMLStateBlock(block)
+        else:
+            cls.logger.debug(f'load block as implicit')
+            for task in block.block:
+                if isinstance(task, Block):
+                    yield from UMLStateBlock.load(task)
+                elif getattr(task, 'implicit', False):
+                    continue
+                else:
+                    yield UMLStateTask(task)
 
-    def get_UMLTasks(self, tasks) -> list[UMLStateBase]:
-        results = []
+    @classmethod
+    def load_tasks(cls, tasks:Iterable[Block|Task]) -> Iterator[UMLStateBlock | UMLStateTask]:
         for task in tasks:
             if isinstance(task, Block):
-                blockState = UMLStateBlock(task)
-                if len(blockState.tasks) == 0:
-                    # When the block is added implicitly, length of the tasks will be 0.
-                    # need to skip appending to results
-                    continue
-
-                results.append(blockState)
-                self.logger.debug(f'append {blockState}')
+                yield from cls.load(task)
             elif getattr(task, 'implicit', False):
                 # Skip when the tasks is implicit `role_complete` block
                 # See: https://github.com/ansible/ansible/commit/1b70260d5aa2f6c9782fd2b848e8d16566e50d85
                 continue
             else:
-                taskState = UMLStateTask(task)
-                results.append(taskState)
-                self.logger.debug(f'append {taskState}')
-        return results
+                yield UMLStateTask(task)
+
+    def __init__(self, block:Block) -> None:
+        self.block = block
+        self.id = UMLStateBlock.ID
+        UMLStateBlock.ID += 1
+        self._name = 'block_%d' % self.id
+        self.logger.debug(f'start: {self}')
+        self.tasks = tuple(UMLStateBlock.load_tasks(block.block))
+        self.always = tuple(UMLStateBlock.load_tasks(block.always))
+        self.rescue = tuple(task for task in UMLStateBlock.load_tasks(block.rescue))
+        self.when = self.get_when_list(block)
+        self.has_always = len(self.always) > 0
+        self.has_rescue = len(self.rescue) > 0
+        self.has_when = len(self.when) > 0
+
+        self.logger.debug(f'end: {self}')
 
     def generateDefinition(self, level:int=0) -> Iterator[str]:
         self.logger.debug(f'start {self}')
@@ -326,10 +331,10 @@ class UMLStatePlay(UMLStateBase):
         self.id = UMLStatePlay.ID
         UMLStatePlay.ID += 1
         self._name = 'play_%d' % self.id
-        self.pre_tasks = [UMLStateBlock(block) for block in play.pre_tasks]
-        self.roles = [UMLStateBlock(block) for role in play.roles if not role.from_include for block in role.get_task_blocks()]
-        self.tasks = [UMLStateBlock(block) for block in play.tasks]
-        self.post_tasks = [UMLStateBlock(block) for block in play.post_tasks]
+        self.pre_tasks = tuple(UMLStateBlock.load_tasks(play.pre_tasks))
+        self.roles = tuple(UMLStateBlock.load_tasks(block for role in play.roles if not role.from_include for block in role.get_task_blocks()))
+        self.tasks = tuple(UMLStateBlock.load_tasks(play.tasks))
+        self.post_tasks = tuple(UMLStateBlock.load_tasks(play.post_tasks))
         self.logger.debug('end')
 
     def get_all_tasks(self) -> list[UMLStateBase]:
