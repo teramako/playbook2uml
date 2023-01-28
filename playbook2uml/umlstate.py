@@ -226,10 +226,8 @@ class UMLStateBlock(UMLStateBase):
         self.tasks = tuple(UMLStateBlock.load_tasks(block.block))
         self.always = tuple(UMLStateBlock.load_tasks(block.always))
         self.rescue = tuple(task for task in UMLStateBlock.load_tasks(block.rescue))
-        self.when = self.get_when_list(block)
         self.has_always = len(self.always) > 0
         self.has_rescue = len(self.rescue) > 0
-        self.has_when = len(self.when) > 0
 
         self.logger.debug(f'end: {self}')
 
@@ -238,9 +236,6 @@ class UMLStateBlock(UMLStateBase):
         is_explicit = self.block.name or self.has_always or self.has_rescue
         next_level = level
         prefix = indent * level
-        if self.has_when:
-            yield from self._generateWhenDefinition(level)
-
         if is_explicit:
             yield '%sstate "Block: %s" as %s {' % (prefix, self.block.name, self._name)
             next_level+=1
@@ -255,17 +250,6 @@ class UMLStateBlock(UMLStateBase):
 
         self.logger.debug(f'end {self}')
     
-    def _generateWhenDefinition(self, level:int=0) -> Iterator[str]:
-        name = '%s_when'% self._name
-        yield '%sstate %s <<choice>>' % (indent*level, name)
-        yield '%snote right of %s' % (indent*level, name)
-        note_indent = indent * (level+1)
-        yield '%s=== when' % note_indent
-        yield '%s----' % note_indent
-        for when in self.when:
-            yield '%s - %s' % (note_indent, when)
-        yield '%send note' % (indent*level)
-
     def _generateAlwaysDefinition(self, level:int=0) -> Iterator[str]:
         if not self.has_always:
             return
@@ -285,8 +269,6 @@ class UMLStateBlock(UMLStateBase):
         yield '%s}' % prefix
     
     def get_entry_point_name(self) -> str:
-        if self.has_when:
-            return self._name + '_when'
         return self.tasks[0].get_entry_point_name()
 
     def get_end_point_name(self) -> str:
@@ -296,11 +278,6 @@ class UMLStateBlock(UMLStateBase):
 
     def generateRelation(self, next:UMLStateBase) -> Iterator[str]:
         self.logger.debug(f'start {self}')
-        if self.has_when:
-            #yield '%s' % self.when
-            yield '%s --> %s' % (self._name + '_when', self.tasks[0].get_entry_point_name())
-            yield '%s --> %s : %s' % (self.get_entry_point_name(), next.get_entry_point_name(), 'skip')
-
         for current_state, next_state in pair_state_iter(*self.tasks, *self.always, next):
             yield from current_state.generateRelation(next_state)
 
