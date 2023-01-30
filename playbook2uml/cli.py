@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import (absolute_import, division, print_function, annotations)
 from argparse import ArgumentParser
-from playbook2uml import umlstate, logger as umlLogger
+import playbook2uml.logger as umlLogger
+import playbook2uml.umlstate as umlstate
 import sys
 import os.path
 
@@ -45,11 +46,10 @@ def main():
     option = parse_args(sys.argv[1:])
 
     logger = umlLogger.getLogger(__name__, option.verbose)
-    umlLogger.setLoggerLevel(umlstate.logger, option.verbose)
 
     logger.debug("START")
 
-    umlplaybook = umlstate.UMLStatePlaybook(option.PLAYBOOK, option=option)
+    umlplaybook = umlstate.load(option)
     for line in umlplaybook.generate():
         print(line)
 

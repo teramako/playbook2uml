@@ -29,7 +29,7 @@ class Test_PLAYBOOK(unittest.TestCase):
         for case in self.TEST_CASES:
             with self.subTest(case):
                 args = cli.parse_args([case[0]])
-                book = umlstate.UMLStatePlaybook(args.PLAYBOOK, option=args)
+                book = umlstate.load(args)
                 result_lines = [line for line in book.generate()]
                 with open(case[1], 'r') as f:
                     expect_lines = f.read().strip().splitlines()

@@ -41,7 +41,7 @@ class Test_Parameter(unittest.TestCase):
                 self.assertEqual(args.title, case[1])
 
         with self.subTest('title in UML'):
-            book = umlstate.UMLStatePlaybook(args.PLAYBOOK, option=args)
+            book = umlstate.load(args)
             uml_lines = [line for line in book.generate()]
             self.assertIn(f'title {title}', uml_lines)
 
@@ -53,7 +53,7 @@ class Test_Parameter(unittest.TestCase):
             self.assertEqual(args.theme, theme)
 
         with self.subTest('!theme in UML'):
-            book = umlstate.UMLStatePlaybook(args.PLAYBOOK, option=args)
+            book = umlstate.load(args)
             uml_lines = [line for line in book.generate()]
             self.assertIn(f'!theme {theme}', uml_lines)
 
@@ -64,6 +64,6 @@ class Test_Parameter(unittest.TestCase):
             self.assertEqual(args.left_to_right, True)
 
         with self.subTest('"left to right direction" in UML'):
-            book = umlstate.UMLStatePlaybook(args.PLAYBOOK, option=args)
+            book = umlstate.load(args)
             uml_lines = [line for line in book.generate()]
             self.assertIn('left to right direction', uml_lines)
