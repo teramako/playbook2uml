@@ -8,7 +8,7 @@ import sys
 import os.path
 
 def parse_args(args: list[str]):
-    ap = ArgumentParser(prog='playbook2uml' ,description='Ansible playbook/role to PlantUML', usage='''
+    ap = ArgumentParser(prog='playbook2uml' ,description='Ansible playbook/role to PlantUML or Mermaid.js diagram', usage='''
     %(prog)s [options] PLAYBOOK
     %(prog)s [options] -R ROLE_NAME [BASE_DIR]
     ''')

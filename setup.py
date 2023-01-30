@@ -2,8 +2,8 @@ from setuptools import setup, find_packages
 
 setup(
     name='playbook2uml',
-    version='0.2.2',
-    description='Create a PlantUML State Diagram from Ansible-Playbook/role',
+    version='0.3.0',
+    description='Create a PlantUML or Mermaid.js State Diagram from Ansible-Playbook/role',
     author='teramako',
     author_email='teramako@gmail.com',
     url='https://github.com/teramako/playbook2uml',

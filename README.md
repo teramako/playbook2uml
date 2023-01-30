@@ -1,5 +1,5 @@
 # playbook2uml
-Ansible-playbook/role to PlantUML
+Ansible-playbook/role to PlantUML or Mermaid.js diagram
 
 ## Usage
 
@@ -9,10 +9,12 @@ usage:
     playbook2uml [options] -R ROLE_NAME [BASE_DIR]
 
 
-Ansible playbook/role to PlantUML
+Ansible playbook/role to PlantUML or Mermaid.js diagram
 
 optional arguments:
   -h, --help            show this help message and exit
+  -t {plantuml,mermaid}, --type {plantuml,mermaid}
+                        The diagram type.[default=plantuml]
   -T TITLE, --title TITLE
                         The title of the playbook/role
   --theme THEME         PlantUML theme
