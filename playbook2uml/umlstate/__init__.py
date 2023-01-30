@@ -5,6 +5,7 @@ logger = getLogger(__name__)
 
 DIAGRAM_TYPES = (
     'plantuml',
+    'mermaid'
 )
 
 def load(args:Namespace):
