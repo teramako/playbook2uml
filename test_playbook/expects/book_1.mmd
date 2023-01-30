@@ -1,0 +1,6 @@
+stateDiagram-v2
+    state "Play: Test 1" as play_1 {
+        state "debug<hr>action: debug" as task_1
+    }
+    [*] --> task_1
+    task_1 --> [*]

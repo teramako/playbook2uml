@@ -1,0 +1,35 @@
+stateDiagram-v2
+    state "Play: Test 2 block" as play_1 {
+        state "Begin<hr>action: file" as task_1
+        block_1 : Block Name
+        state block_1 {
+            state "Second<hr>action: debug" as task_2
+            block_1_always : Always
+            state block_1_always {
+                state "Always Task<hr>action: debug" as task_3
+            }
+            block_1_rescue : Rescue
+            state block_1_rescue {
+                state "Rescue Task 1<hr>action: debug" as task_4
+            }
+        }
+        block_2 : Block when
+        state block_2 {
+            state task_5_when <<choice>>
+            note right of task_5_when
+                when
+                 - True
+            end note
+            state "do when the condition is `true`<hr>action: debug" as task_5
+        }
+        state "End<hr>action: debug" as task_6
+    }
+    [*] --> task_1
+    task_1 --> task_2
+    task_2 --> task_3
+    task_3 --> task_5_when
+    task_4 --> task_3
+    task_5_when --> task_5
+    task_5 --> task_6
+    task_5_when --> task_6 : skip
+    task_6 --> [*]
