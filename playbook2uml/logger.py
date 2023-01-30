@@ -18,9 +18,9 @@ def getLogger(name: str, verbose: int = 0) -> logging.Logger:
     setLoggerLevel(logger, verbose)
 
     if sys.stderr.isatty():
-        format = f'{yellow}playbook2uml/%(filename)s:%(lineno)d{reset}:{cyan}[%(name)s.%(funcName)s]{reset} %(message)s'
+        format = f'{yellow}%(filename)s:%(lineno)d{reset}:{cyan}[%(name)s.%(funcName)s]{reset} %(message)s'
     else:
-        format = f'playbook2uml/%(filename)s:%(lineno)d:[%(name)s.%(funcName)s] %(message)s'
+        format = f'%(filename)s:%(lineno)d:[%(name)s.%(funcName)s] %(message)s'
 
     formatter = logging.Formatter(format)
 
