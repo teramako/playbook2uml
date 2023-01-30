@@ -8,6 +8,7 @@ class Test_Parameter(unittest.TestCase):
         args = cli.parse_args([self.PLAYBOOK])
         test_cases = (
             ('PLAYBOOK', self.PLAYBOOK),
+            ('type', 'plantuml'),
             ('theme', None),
             ('left_to_right', False),
             ('verbose', 0),
@@ -16,6 +17,17 @@ class Test_Parameter(unittest.TestCase):
         for case in test_cases:
             with self.subTest(case):
                 self.assertEqual(getattr(args, case[0]), case[1])
+
+    def test_args_TYPE(self):
+        diagramType = 'mermaid'
+        test_cases = (
+            ('--type', diagramType),
+            ('-t', diagramType)
+        )
+        for case in test_cases:
+            with self.subTest(case):
+                args = cli.parse_args([case[0], diagramType, self.PLAYBOOK])
+                self.assertEqual(args.type, case[1])
 
     def test_args_TITLE(self):
         title = 'TITLE 1'

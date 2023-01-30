@@ -11,6 +11,7 @@ def parse_args(args: list[str]):
     %(prog)s [options] PLAYBOOK
     %(prog)s [options] -R ROLE_NAME [BASE_DIR]
     ''')
+    ap.add_argument('-t', '--type', type=str, choices=['plantuml', 'mermaid'], default='plantuml', help='The diagram type.[default=plantuml]')
     ap.add_argument('-T', '--title', type=str, help='The title of the playbook/role')
     ap.add_argument('--theme', type=str, default=None, help='PlantUML theme')
     ap.add_argument('--left-to-right', action='store_true', help='left to right direction')
