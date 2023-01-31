@@ -1,0 +1,7 @@
+stateDiagram-v2
+    state "Play: Simple loop" as play_1 {
+        state "show values<hr>action: debug" as task_1
+    }
+    [*] --> task_1
+    task_1 --> [*]
+    task_1 --> task_1 : loop\n - foo\n - bar

@@ -79,16 +79,14 @@ class UMLStateTask(UMLStateTaskBase):
             return
         prefix = indent * level
         loop_name = ('loop(with_%s)' % self.task.loop_with) if self.task.loop_with else 'loop'
-        yield '%s%s --> %s' % (prefix, self._name, self._entry_point_name)
-        yield '%snote on link' % prefix
-        yield '%s%s%s' % (prefix, indent, loop_name)
         # loops can either be a string (one-item loop) or a list
+        loop_items = [loop_name]
         if isinstance(self.task.loop, list):
             for loop_item in self.task.loop:
-                yield '%s%s- %s' % (prefix, indent, loop_item)
+                loop_items.append(f' - {loop_item}')
         else:
-            yield '%s%s- %s' % (prefix, indent, self.task.loop)
-        yield '%send note' % prefix
+            loop_items.append(self.task.loop)
+        yield '%s%s --> %s : %s' % (prefix, self._name, self._entry_point_name, '\\n'.join(loop_items))
 
 class UMLStateBlock(UMLStateBlockBase):
     ID = 1

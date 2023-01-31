@@ -1,0 +1,14 @@
+stateDiagram-v2
+    state "Play: loop and when" as play_1 {
+        state task_1_when <<choice>>
+        note right of task_1_when
+            when
+             - flag > 0
+        end note
+        state "show values<hr>action: debug" as task_1
+    }
+    [*] --> task_1_when
+    task_1_when --> task_1
+    task_1 --> [*]
+    task_1_when --> [*] : skip
+    task_1 --> task_1_when : loop\n - foo\n - bar
