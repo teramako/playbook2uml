@@ -1,0 +1,28 @@
+@startuml
+state "= Play: loop and when" as play_1 {
+    play_1 : | gather_facts | None |
+    play_1 : | hosts | localhost |
+    play_1 : | serial | [] |
+    play_1 : | strategy | linear |
+    state task_1_when <<choice>>
+    note right of task_1_when
+        === when
+        ----
+         - flag > 0
+    end note
+    state "== show values" as task_1
+    task_1 : Action **debug**
+    task_1 : | msg | {{ item }} |
+}
+[*] --> task_1_when
+task_1_when --> task_1
+task_1 --> [*]
+task_1_when --> [*] : skip
+task_1 --> task_1_when
+note on link
+    === loop
+    ----
+    - foo
+    - bar
+end note
+@enduml
