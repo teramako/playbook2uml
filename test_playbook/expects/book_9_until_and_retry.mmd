@@ -1,0 +1,16 @@
+stateDiagram-v2
+    state "Play: Until and retries" as play_1 {
+        state "Wait for response<hr>action: ping" as task_1
+        state task_1_until <<choice>>
+        note right of task_1_until
+            until: resesult is success
+            retres: 3
+            delay: 10 (secconds)
+        end note
+        state "Do something<hr>action: debug" as task_2
+    }
+    [*] --> task_1
+    task_1_until --> task_2
+    task_1 --> task_1_until
+    task_1_until --> task_1 : retry
+    task_2 --> [*]
