@@ -1,0 +1,15 @@
+- name: play 1
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - debug:
+        msg: "Hello Play 1"
+
+- name: play 2
+  hosts: all
+  gather_facts: true
+  tasks:
+    - debug:
+        msg: "Hello Play 2"
+
+- import_playbook: book_1.yml
