@@ -3,7 +3,7 @@ stateDiagram-v2
         state "Wait for response<hr>action: ping" as task_1
         state task_1_until <<choice>>
         note right of task_1_until
-            until: resesult is success
+            until: result is success
             retres: 3
             delay: 10 (secconds)
         end note
