@@ -1,0 +1,26 @@
+@startuml
+state "= Play: Until and retries" as play_1 {
+    play_1 : | gather_facts | None |
+    play_1 : | hosts | localhost |
+    play_1 : | serial | [] |
+    play_1 : | strategy | linear |
+    state "== Wait for response" as task_1
+    task_1 : Action **ping**
+    task_1 : ....
+    task_1 : **register** //result//
+    state task_1_until <<choice>>
+    note right of task_1_until
+        **until**: resesult is success
+        **retres**: 3
+        **delay**: 10 (secconds)
+    end note
+    state "== Do something" as task_2
+    task_2 : Action **debug**
+    task_2 : | msg | The server is available !! |
+}
+[*] --> task_1
+task_1_until --> task_2
+task_1 --> task_1_until
+task_1_until --> task_1 : retry
+task_2 --> [*]
+@enduml

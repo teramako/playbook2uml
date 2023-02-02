@@ -1,0 +1,13 @@
+- name: Until and retries
+  hosts: localhost
+  tasks:
+    - name: Wait for response
+      ping:
+      register: result
+      until: resesult is success
+      retries: 3
+      delay: 10
+
+    - name: Do something
+      debug:
+        msg: "The server is available !!"
