@@ -30,15 +30,6 @@ class UMLStateTask(UMLStateTaskBase):
 
         self.logger.debug(f'end {self}')
 
-    def _generete_table(self, obj:dict, level:int=0) -> Iterator[str]:
-        for key in obj:
-            val = obj[key]
-            if isinstance(val, str):
-                lines = val.splitlines()
-                if len(lines) > 1:
-                    val = '%s ...(+%d lines)' % (lines[0], len(lines)-1)
-            yield '%s%s : | %s | %s |' %(indent*level, self._name, key, val)
-
     def _generateUntilDefinition(self, level:int=0) -> Iterator[str]:
         yield '%sstate %s <<choice>>' % (indent*level, self._end_point_name)
         yield '%snote right of %s' % (indent*level, self._end_point_name)
