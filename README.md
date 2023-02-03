@@ -37,6 +37,7 @@ Role:
   BASE_DIR              The base directory.[default=current directory]
 ```
 
+### PlantUML
 The PlantUML code is out to stdout.
 ```console
 $ playbook2uml path/to/playbook.yml --title "hello_world.yml"
@@ -60,9 +61,84 @@ playbook2uml path/to/playbook.yml --title "Sample 1" | \
     curl --data-binary @- http://plantuml-server.example.com/svg/ -o - > path/to/foo.svg
 ```
 
-## Output
+#### Output (PlantUML)
 
 ![plantuml svg](docs/img/sample_1.svg)
+
+### Mermaid.js
+
+```console
+$ playbook2uml path/to/playbook.yml -t mermaid
+stateDiagram-v2
+    state "Play: Sample 1" as play_1 {
+        state "Create directory<hr>action: file" as task_1
+        block_1 : Execute python script
+        state block_1 {
+            state "Get python script from web<hr>action: get_url" as task_2
+            block_1_always : Always
+            state block_1_always {
+                state "execute<hr>action: command" as task_3
+                state task_4_when <<choice>>
+                note right of task_4_when
+                    when
+                     - exec_result.rc != 0
+                end note
+                state "debug<hr>action: debug" as task_4
+            }
+            block_1_rescue : Rescue
+            state block_1_rescue {
+                state "Use local file<hr>action: copy" as task_5
+            }
+        }
+        state "End Message<hr>action: debug" as task_6
+    }
+    [*] --> task_1
+    task_1 --> task_2
+    task_2 --> task_3
+    task_3 --> task_4_when
+    task_4_when --> task_4
+    task_4 --> task_6
+    task_4_when --> task_6 : skip
+    task_5 --> task_3
+    task_6 --> [*]
+```
+
+#### Output (Mermaid.js)
+
+```mermaid
+stateDiagram-v2
+    state "Play: Sample 1" as play_1 {
+        state "Create directory<hr>action: file" as task_1
+        block_1 : Execute python script
+        state block_1 {
+            state "Get python script from web<hr>action: get_url" as task_2
+            block_1_always : Always
+            state block_1_always {
+                state "execute<hr>action: command" as task_3
+                state task_4_when <<choice>>
+                note right of task_4_when
+                    when
+                     - exec_result.rc != 0
+                end note
+                state "debug<hr>action: debug" as task_4
+            }
+            block_1_rescue : Rescue
+            state block_1_rescue {
+                state "Use local file<hr>action: copy" as task_5
+            }
+        }
+        state "End Message<hr>action: debug" as task_6
+    }
+    [*] --> task_1
+    task_1 --> task_2
+    task_2 --> task_3
+    task_3 --> task_4_when
+    task_4_when --> task_4
+    task_4 --> task_6
+    task_4_when --> task_6 : skip
+    task_5 --> task_3
+    task_6 --> [*]
+```
 
 ## Requirements
 
