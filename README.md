@@ -1,6 +1,8 @@
 # playbook2uml
 Ansible-playbook/role to PlantUML or Mermaid.js diagram
 
+⚠️: Mermaid.js feature is *experimental* now.
+
 ## Usage
 
 ```
