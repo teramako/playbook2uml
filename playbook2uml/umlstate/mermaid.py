@@ -35,7 +35,7 @@ class UMLStateTask(UMLStateTaskBase):
         yield '%snote right of %s' % (indent*level, self._end_point_name)
         yield '%suntil: %s' % (indent*(level+1), self.task.until)
         yield '%sretres: %s' % (indent*(level+1), self.task.retries)
-        yield '%sdelay: %s (secconds)' % (indent*(level+1), self.task.delay)
+        yield '%sdelay: %s (seconds)' % (indent*(level+1), self.task.delay)
         yield '%send note' % (indent*level)
 
     def _generateWhenDefinition(self, level:int=0) -> Iterator[str]:

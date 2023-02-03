@@ -12,7 +12,7 @@ state "= Play: Until and retries" as play_1 {
     note right of task_1_until
         **until**: result is success
         **retres**: 3
-        **delay**: 10 (secconds)
+        **delay**: 10 (seconds)
     end note
     state "== Do something" as task_2
     task_2 : Action **debug**
