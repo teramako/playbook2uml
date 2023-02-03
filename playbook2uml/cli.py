@@ -2,15 +2,17 @@
 # -*- coding: utf-8 -*-
 from __future__ import (absolute_import, division, print_function, annotations)
 from argparse import ArgumentParser
-from playbook2uml import umlstate, logger as umlLogger
+import playbook2uml.logger as umlLogger
+import playbook2uml.umlstate as umlstate
 import sys
 import os.path
 
 def parse_args(args: list[str]):
-    ap = ArgumentParser(prog='playbook2uml' ,description='Ansible playbook/role to PlantUML', usage='''
+    ap = ArgumentParser(prog='playbook2uml' ,description='Ansible playbook/role to PlantUML or Mermaid.js diagram', usage='''
     %(prog)s [options] PLAYBOOK
     %(prog)s [options] -R ROLE_NAME [BASE_DIR]
     ''')
+    ap.add_argument('-t', '--type', type=str, choices=['plantuml', 'mermaid'], default='plantuml', help='The diagram type.[default=plantuml]')
     ap.add_argument('-T', '--title', type=str, help='The title of the playbook/role')
     ap.add_argument('--theme', type=str, default=None, help='PlantUML theme')
     ap.add_argument('--left-to-right', action='store_true', help='left to right direction')
@@ -44,11 +46,10 @@ def main():
     option = parse_args(sys.argv[1:])
 
     logger = umlLogger.getLogger(__name__, option.verbose)
-    umlLogger.setLoggerLevel(umlstate.logger, option.verbose)
 
     logger.debug("START")
 
-    umlplaybook = umlstate.UMLStatePlaybook(option.PLAYBOOK, option=option)
+    umlplaybook = umlstate.load(option)
     for line in umlplaybook.generate():
         print(line)
 

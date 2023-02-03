@@ -1,86 +1,23 @@
 #!env python
 # -*- coding: utf-8 -*-
 from __future__ import (absolute_import, division, print_function, annotations)
-from argparse import Namespace
-from typing import Iterator, Optional, Tuple
-from collections.abc import Iterable
-from abc import ABCMeta, abstractmethod
-from playbook2uml.logger import getLogger
-
-from ansible.parsing.dataloader import DataLoader
-from ansible.vars.manager import VariableManager
-from ansible.playbook import Playbook
-from ansible.playbook.play import Play
-from ansible.playbook.block import Block
-from ansible.playbook.task import Task
+from typing import ClassVar, Iterator, Optional
+from playbook2uml.umlstate.base import (
+    indent,
+    logger,
+    pair_state_iter,
+    UMLStatePlaybookBase,
+    UMLStatePlayBase,
+    UMLStateBase,
+    UMLStateTaskBase,
+    UMLStateBlockBase,
+    UMLStateStart
+)
 from ansible.utils.sentinel import Sentinel
-__metaclass__ = type
 
-indent = '    '
-logger = getLogger(__name__)
+class UMLStateTask(UMLStateTaskBase):
+    ID : ClassVar[int] = 1
 
-class UMLStateBase(metaclass=ABCMeta):
-    @abstractmethod
-    def generateDefinition(self, level:int=0) -> Iterator[str]:
-        pass
-
-    @abstractmethod
-    def generateRelation(self, next:Optional[UMLStateBase] = None) -> Iterator[str]:
-        pass
-
-    @abstractmethod
-    def get_entry_point_name(self) -> str:
-        pass
-
-    @abstractmethod
-    def get_end_point_name(self) -> str:
-        pass
-
-    def __str__(self) -> str:
-        return f"<{self.__class__.__name__}({self._name})>"
-
-    def get_when_list(self, task) -> list[str]:
-        when = task.when
-        if when is Sentinel:
-            return []
-        elif isinstance(when, list):
-            return when
-        else:
-            return [when]
-
-def pair_state_iter(*args) -> Iterator[Tuple[UMLStateBase, UMLStateBase]]:
-    current = args[0]
-    for next in args[1:]:
-        yield (current, next)
-        current = next
-
-class UMLStateTask(UMLStateBase):
-    ID = 1
-    logger = logger.getChild("UMLStateTask")
-    def __init__(self, task:Task) -> None:
-        self.logger.debug('start')
-        self.task = task
-        self.id = UMLStateTask.ID
-        UMLStateTask.ID += 1
-
-        self._name = 'task_%d' % self.id
-        self.logger.debug(f'set name "{self._name}"')
-        self._entry_point_name = self._name
-        self._end_point_name = self._name
-        self.when = self.get_when_list(self.task)
-        self.has_when = len(self.when) > 0
-        if self.has_when:
-            self._entry_point_name = '%s_when' % self._name
-            self.logger.debug(f'{self._name} has `when`. set `_entry_point_name "{self._entry_point_name}"')
-
-        self.has_until = False
-        if self.task.until:
-            self.has_until = True
-            self._end_point_name = '%s_until' % self._name
-            self.logger.debug(f'{self._name} has `until`. set `_end_point_name "{self._end_point_name}"')
-
-        self.logger.debug('end')
-        
     def generateDefinition(self, level:int=0) -> Iterator[str]:
         self.logger.debug(f'start {self}')
         prefix = indent * level
@@ -132,7 +69,7 @@ class UMLStateTask(UMLStateBase):
         yield '%snote right of %s' % (indent*level, self._end_point_name)
         yield '%s**until**: %s' % (indent*(level+1), self.task.until)
         yield '%s**retres**: %s' % (indent*(level+1), self.task.retries)
-        yield '%s**delay**: %s (secconds)' % (indent*(level+1), self.task.delay)
+        yield '%s**delay**: %s (seconds)' % (indent*(level+1), self.task.delay)
         yield '%send note' % (indent*level)
 
     def _generateWhenDefinition(self, level:int=0) -> Iterator[str]:
@@ -145,7 +82,7 @@ class UMLStateTask(UMLStateBase):
             yield '%s - %s' % (note_indent, when)
         yield '%send note' % (indent*level)
 
-    def generateRelation(self, next: Optional[UMLStateBase] = None) -> Iterator[str]:
+    def generateRelation(self, next: Optional[UMLStateBase] = None, level:int=0) -> Iterator[str]:
         self.logger.debug(f'start {self}')
         if self.has_when:
             yield '%s --> %s' % (self._entry_point_name, self._name)
@@ -178,58 +115,10 @@ class UMLStateTask(UMLStateBase):
             yield '%s- %s' % (indent, self.task.loop)
         yield 'end note'
 
-    def get_entry_point_name(self) -> str:
-        return self._entry_point_name
-
-    def get_end_point_name(self) -> str:
-        return self._end_point_name
-
-class UMLStateBlock(UMLStateBase):
+class UMLStateBlock(UMLStateBlockBase):
     ID = 1
-    logger = logger.getChild('UMLStateBlock')
 
-    @classmethod
-    def load(cls, block:Block) -> Iterator[UMLStateBlock | UMLStateTask]:
-        if block.name or len(block.always) > 0 or len(block.rescue) > 0:
-            cls.logger.debug(f'load block as explicit: {cls.ID}')
-            yield UMLStateBlock(block)
-        else:
-            cls.logger.debug(f'load block as implicit')
-            for task in block.block:
-                if isinstance(task, Block):
-                    yield from UMLStateBlock.load(task)
-                elif getattr(task, 'implicit', False):
-                    cls.logger.debug(f'skip: {task.get_name()} is implicit')
-                    continue
-                else:
-                    yield UMLStateTask(task)
-
-    @classmethod
-    def load_tasks(cls, tasks:Iterable[Block|Task]) -> Iterator[UMLStateBlock | UMLStateTask]:
-        for task in tasks:
-            if isinstance(task, Block):
-                yield from cls.load(task)
-            elif getattr(task, 'implicit', False):
-                cls.logger.debug(f'skip: {task.get_name()} is implicit')
-                # Skip when the tasks is implicit `role_complete` block
-                # See: https://github.com/ansible/ansible/commit/1b70260d5aa2f6c9782fd2b848e8d16566e50d85
-                continue
-            else:
-                yield UMLStateTask(task)
-
-    def __init__(self, block:Block) -> None:
-        self.block = block
-        self.id = UMLStateBlock.ID
-        UMLStateBlock.ID += 1
-        self._name = 'block_%d' % self.id
-        self.logger.debug(f'start: {self}')
-        self.tasks = tuple(UMLStateBlock.load_tasks(block.block))
-        self.always = tuple(UMLStateBlock.load_tasks(block.always))
-        self.rescue = tuple(task for task in UMLStateBlock.load_tasks(block.rescue))
-        self.has_always = len(self.always) > 0
-        self.has_rescue = len(self.rescue) > 0
-
-        self.logger.debug(f'end: {self}')
+    TASK_CLASS = UMLStateTask
 
     def generateDefinition(self, level:int=0) -> Iterator[str]:
         self.logger.debug(f'start {self}')
@@ -268,61 +157,9 @@ class UMLStateBlock(UMLStateBase):
             yield from task.generateDefinition(level + 1)
         yield '%s}' % prefix
     
-    def get_entry_point_name(self) -> str:
-        return self.tasks[0].get_entry_point_name()
-
-    def get_end_point_name(self) -> str:
-        if self.has_always:
-            return self.always[-1].get_end_point_name()
-        return self.tasks[-1].get_end_point_name()
-
-    def generateRelation(self, next:UMLStateBase) -> Iterator[str]:
-        self.logger.debug(f'start {self}')
-        for current_state, next_state in pair_state_iter(*self.tasks, *self.always, next):
-            yield from current_state.generateRelation(next_state)
-
-        if self.has_rescue:
-            states = pair_state_iter(*self.rescue, self.always[0] if self.has_always else next)
-            for current_state, next_state in states:
-                yield from current_state.generateRelation(next_state)
-
-        self.logger.debug(f'end {self}')
-
-class UMLStateStart(UMLStateBase):
-    logger = logger.getChild('UMLStateStart')
-    def generateDefinition(self, level: int = 0) -> Iterator[str]:
-        return
-    def generateRelation(self, next:UMLStateBase) -> Iterator[str]:
-        self.logger.debug('start')
-        yield '[*] --> %s' % next.get_entry_point_name()
-        self.logger.debug('end')
-    def get_entry_point_name(self) -> str:
-        return '[*]'
-    def get_end_point_name(self) -> str:
-        return '[*]'
-
-
-class UMLStatePlay(UMLStateBase):
+class UMLStatePlay(UMLStatePlayBase):
     ID = 1
-    logger = logger.getChild('UMLStatePlay')
-    def __init__(self, play:Play) -> None:
-        self.logger.debug('start')
-        self.play = play
-        self.id = UMLStatePlay.ID
-        UMLStatePlay.ID += 1
-        self._name = 'play_%d' % self.id
-        self.pre_tasks = tuple(UMLStateBlock.load_tasks(play.pre_tasks))
-        self.roles = tuple(UMLStateBlock.load_tasks(block for role in play.roles if not role.from_include for block in role.get_task_blocks()))
-        self.tasks = tuple(UMLStateBlock.load_tasks(play.tasks))
-        self.post_tasks = tuple(UMLStateBlock.load_tasks(play.post_tasks))
-        self.logger.debug(f'{self}: {len(self.pre_tasks)} pre_tasks: {[str(t) for t in self.pre_tasks]}')
-        self.logger.debug(f'{self}: {len(self.roles)} roles: {[str(t) for t in self.roles]}')
-        self.logger.debug(f'{self}: {len(self.tasks)} tasks: {[str(t) for t in self.tasks]}')
-        self.logger.debug(f'{self}: {len(self.post_tasks)} post_tasks: {[str(t) for t in self.post_tasks]}')
-        self.logger.debug('end')
-
-    def get_all_tasks(self) -> list[UMLStateBase]:
-        return self.pre_tasks + self.roles + self.tasks + self.post_tasks
+    BLOCK_CLASS = UMLStateBlock
 
     def _generateVarsFilesDefition(self, level:int=0) -> Iterator[str]:
         '''
@@ -368,66 +205,24 @@ class UMLStatePlay(UMLStateBase):
 
         self.logger.debug(f'end {self}')
 
-    def generateRelation(self, next_play:UMLStatePlay=None) -> Iterator[str]:
+    def generateRelation(self, next_play:UMLStatePlay=None, level:int=0) -> Iterator[str]:
         self.logger.debug(f'start {self}')
         for current_state, next_state in pair_state_iter(*self.get_all_tasks(), next_play):
             yield from current_state.generateRelation(next_state)
 
         self.logger.debug(f'end {self}')
 
-    def get_entry_point_name(self) -> str:
-        return self.get_all_tasks()[0].get_entry_point_name()
+class UMLStatePlaybook(UMLStatePlaybookBase):
 
-    def get_end_point_name(self) -> str:
-        return self.get_all_tasks()[-1].get_end_point_name()
-
-class UMLStatePlaybook:
-    logger = logger.getChild('UMLStatePlaybook')
-    def __init__(self, playbook:str, option:Namespace=None):
-        self.logger.debug('start')
-        UMLStatePlay.ID = 1
-        UMLStateBlock.ID = 1
-        UMLStateTask.ID = 1
-        dataloader = DataLoader()
-        variable_manager = VariableManager(loader=dataloader)
-        pb = Playbook(loader=dataloader)
-        if option.role:
-            '''
-            For only role mode.
-            Load a dummy play data which imports the role only.
-            '''
-            role_name = option.role
-            dummy_play = {
-                'hosts': 'all',
-                'tasks': [
-                    {
-                        'import_role': {
-                            'name': role_name,
-                            'tasks_from': option.tasks_from
-                        }
-                    }
-                ]
-            }
-            self.logger.debug(f'load dummy play: {dummy_play}')
-            pb._loader.set_basedir(option.BASE_DIR)
-            self.plays = [
-                UMLStatePlay(Play.load(dummy_play, variable_manager=variable_manager, loader=pb._loader, vars=None))
-            ]
-        else:
-            '''
-            For whole of the playbook.
-            '''
-            self.logger.debug(f'load playbook: {playbook}')
-            pb._load_playbook_data(file_name=playbook, variable_manager=variable_manager)
-            self.plays = [UMLStatePlay(play) for play in pb.get_plays()]
-
-        self.options = option
+    PLAY_CLASS  = UMLStatePlay
+    BLOCK_CLASS = UMLStateBlock
+    TASK_CLASS  = UMLStateTask
 
     def generate(self) -> Iterator[str]:
         '''
         Generate PlantUML codes
         '''
-        self.logger.info('START')
+        self.logger.info('START [PlantUML]')
         only_role = False
         yield '@startuml'
         if self.options:
