@@ -1,0 +1,9 @@
+- name: Simple loop
+  hosts: localhost
+  tasks:
+    - name: show values
+      debug:
+        msg: "{{ item }}"
+      loop:
+        - foo
+        - bar

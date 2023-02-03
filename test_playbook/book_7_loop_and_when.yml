@@ -1,0 +1,10 @@
+- name: loop and when
+  hosts: localhost
+  tasks:
+    - name: show values
+      when: flag > 0
+      debug:
+        msg: "{{ item }}"
+      loop:
+        - foo
+        - bar
