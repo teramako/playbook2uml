@@ -1,9 +1,6 @@
 @startuml
 state "= Play: Until and retries" as play_1 {
-    play_1 : | gather_facts | None |
     play_1 : | hosts | localhost |
-    play_1 : | serial | [] |
-    play_1 : | strategy | linear |
     state "== Wait for response" as task_1
     task_1 : Action **ping**
     task_1 : ....

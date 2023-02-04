@@ -1,9 +1,6 @@
 @startuml
 state "= Play: Simple loop" as play_1 {
-    play_1 : | gather_facts | None |
     play_1 : | hosts | localhost |
-    play_1 : | serial | [] |
-    play_1 : | strategy | linear |
     state "== show values" as task_1
     task_1 : Action **debug**
     task_1 : | msg | {{ item }} |
