@@ -1,9 +1,6 @@
 @startuml
 state "= Play: loop and when" as play_1 {
-    play_1 : | gather_facts | None |
     play_1 : | hosts | localhost |
-    play_1 : | serial | [] |
-    play_1 : | strategy | linear |
     state task_1_when <<choice>>
     note right of task_1_when
         === when
