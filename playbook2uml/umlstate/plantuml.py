@@ -1,7 +1,7 @@
 #!env python
 # -*- coding: utf-8 -*-
 from __future__ import (absolute_import, division, print_function, annotations)
-from typing import ClassVar, Iterator, Optional
+from typing import ClassVar, Iterator, Optional, Tuple
 from playbook2uml.umlstate.base import (
     indent,
     logger,
@@ -161,6 +161,8 @@ class UMLStatePlay(UMLStatePlayBase):
     ID = 1
     BLOCK_CLASS = UMLStateBlock
 
+    MEATADATA_KEYS = ('hosts', 'strategy', 'serial', 'gather_facts')
+
     def _generateVarsFilesDefition(self, level:int=0) -> Iterator[str]:
         '''
         generate `vars_files` definition
@@ -181,18 +183,26 @@ class UMLStatePlay(UMLStatePlayBase):
                 yield '%s%s : | %s | %s |' % (indent*level, self._name, key_name, prompt['name'])
                 key_name = ''
 
+    def _get_play_metadata(self) -> Iterator[Tuple[str, str]]:
+        ds:dict = self.play.get_ds()
+        for key in self.MEATADATA_KEYS:
+            if key not in ds:
+                self.logger.debug(f'{key} is implicit.')
+                continue
+            if not hasattr(self.play, key):
+                self.logger.debug(f'{key} is not implemented on Ansible')
+                continue
+            value = str(getattr(self.play, key))
+
+            yield (key, value)
+
     def generateDefinition(self, level:int=0, only_role=False) -> Iterator[str]:
         self.logger.debug(f'start {self}')
         if not only_role:
             yield '%sstate "= Play: %s" as %s {' % (indent*level, self.play.get_name(), self._name)
             level += 1
-            for key in dir(self.play):
-                if key in ['hosts', 'gather_facts', 'strategy', 'serial']:
-                    val = getattr(self.play, key)
-                    if val is Sentinel:
-                        continue
-
-                    yield '%s%s : | %s | %s |' % (indent*level, self._name, key, val)
+            for (meta_key, meta_value) in self._get_play_metadata():
+                yield '%s%s : | %s | %s |' % (indent*level, self._name, meta_key, meta_value)
 
             yield from self._generateVarsFilesDefition(level=level)
             yield from self._generateVarsPromptDefinition(level=level)
