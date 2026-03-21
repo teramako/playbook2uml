@@ -1,7 +1,7 @@
 #!env python
 # -*- coding: utf-8 -*-
 from __future__ import (absolute_import, division, print_function, annotations)
-from typing import ClassVar, Iterator, Optional, Tuple
+from typing import ClassVar, Iterator, Optional, Tuple, Any
 from playbook2uml.umlstate.base import (
     indent,
     logger,
@@ -13,7 +13,6 @@ from playbook2uml.umlstate.base import (
     UMLStateBlockBase,
     UMLStateStart
 )
-from ansible.utils.sentinel import Sentinel
 
 class UMLStateTask(UMLStateTaskBase):
     ID : ClassVar[int] = 1
@@ -102,7 +101,8 @@ class UMLStateTask(UMLStateTaskBase):
     def _generateLoopRelation(self) -> Iterator[str]:
         if self.task.loop is None:
             return
-        loop_name = ('loop(with_%s)' % self.task.loop_with) if self.task.loop_with else 'loop'
+        loop_with = getattr(self.task, 'loop_with', None)
+        loop_name = f'loop(with_{loop_with})' if loop_with else 'loop'
         yield '%s --> %s' % (self._name, self._entry_point_name)
         yield 'note on link'
         yield '%s=== %s' % (indent, loop_name)
@@ -161,7 +161,7 @@ class UMLStatePlay(UMLStatePlayBase):
     ID = 1
     BLOCK_CLASS = UMLStateBlock
 
-    MEATADATA_KEYS = ('hosts', 'strategy', 'serial', 'gather_facts')
+    METADATA_KEYS = ('hosts', 'strategy', 'serial', 'gather_facts')
 
     def _generateVarsFilesDefition(self, level:int=0) -> Iterator[str]:
         '''
@@ -184,8 +184,8 @@ class UMLStatePlay(UMLStatePlayBase):
                 key_name = ''
 
     def _get_play_metadata(self) -> Iterator[Tuple[str, str]]:
-        ds:dict = self.play.get_ds()
-        for key in self.MEATADATA_KEYS:
+        ds: dict = getattr(self.play, '_ds', {})
+        for key in self.METADATA_KEYS:
             if key not in ds:
                 self.logger.debug(f'{key} is implicit.')
                 continue

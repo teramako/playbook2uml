@@ -69,7 +69,8 @@ class UMLStateTask(UMLStateTaskBase):
         if self.task.loop is None:
             return
         prefix = indent * level
-        loop_name = ('loop(with_%s)' % self.task.loop_with) if self.task.loop_with else 'loop'
+        loop_with = getattr(self.task, 'loop_with', None)
+        loop_name = f'loop(with_{loop_with})' if loop_with else 'loop'
         # loops can either be a string (one-item loop) or a list
         loop_items = [loop_name]
         if isinstance(self.task.loop, list):

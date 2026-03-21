@@ -13,6 +13,7 @@ from ansible.playbook.play import Play
 from ansible.playbook.block import Block
 from ansible.playbook.task import Task
 from ansible.utils.sentinel import Sentinel
+from ansible.plugins.loader import init_plugin_loader
 __metaclass__ = type
 
 indent = '    '
@@ -48,6 +49,11 @@ class UMLStateTaskBase(UMLStateBase, metaclass=ABCMeta):
     logger : ClassVar[Logger] = logger.getChild("UMLStateTask")
     def __init__(self, task:Task) -> None:
         self.logger.debug('start')
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', UserWarning)
+            init_plugin_loader()
+
         self.task = task
         self.id = self.__class__.ID
         self.__class__.ID += 1
@@ -179,7 +185,9 @@ class UMLStatePlayBase(UMLStateBase, metaclass=ABCMeta):
         self.__class__.ID += 1
         self._name = 'play_%d' % self.id
         self.pre_tasks = tuple(self.BLOCK_CLASS.load_tasks(play.pre_tasks))
-        self.roles = tuple(self.BLOCK_CLASS.load_tasks(block for role in play.roles if not role.from_include for block in role.get_task_blocks()))
+        self.roles = tuple(self.BLOCK_CLASS.load_tasks(
+            block for role in play.roles if not getattr(role, 'from_include', getattr(role, '_from_include', False))
+            for block in role.get_task_blocks()))
         self.tasks = tuple(self.BLOCK_CLASS.load_tasks(play.tasks))
         self.post_tasks = tuple(self.BLOCK_CLASS.load_tasks(play.post_tasks))
         self.logger.debug(f'{self}: {len(self.pre_tasks)} pre_tasks: {[str(t) for t in self.pre_tasks]}')
@@ -209,7 +217,6 @@ class UMLStatePlaybookBase(metaclass=ABCMeta):
         self.TASK_CLASS.ID = 1
         dataloader = DataLoader()
         variable_manager = VariableManager(loader=dataloader)
-        pb = Playbook(loader=dataloader)
         if option.role:
             '''
             For only role mode.
@@ -228,7 +235,8 @@ class UMLStatePlaybookBase(metaclass=ABCMeta):
                 ]
             }
             self.logger.debug(f'load dummy play: {dummy_play}')
-            pb._loader.set_basedir(option.BASE_DIR)
+            dataloader.set_basedir(option.BASE_DIR)
+            pb = Playbook(loader=dataloader)
             self.plays = [
                 self.PLAY_CLASS(Play.load(dummy_play, variable_manager=variable_manager, loader=pb._loader, vars=None))
             ]
@@ -237,7 +245,7 @@ class UMLStatePlaybookBase(metaclass=ABCMeta):
             For whole of the playbook.
             '''
             self.logger.debug(f'load playbook: {playbook}')
-            pb._load_playbook_data(file_name=playbook, variable_manager=variable_manager)
+            pb = Playbook.load(playbook, variable_manager=variable_manager, loader=dataloader)
             self.plays = [self.PLAY_CLASS(play) for play in pb.get_plays()]
 
         self.options = option
