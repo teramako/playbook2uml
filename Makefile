@@ -4,7 +4,7 @@ install: ## Install playbook2uml package
 
 .PHONY: build
 build: ## Create package to "dist" directory
-	python -m setup sdist
+	python -m build
 
 .PHONY: clean
 clean: ## Remove "dist" directory and egg-info
