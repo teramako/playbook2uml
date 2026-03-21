@@ -142,7 +142,8 @@ stateDiagram-v2
 
 ## Requirements
 
-- `ansible` >= 2.9
+- Python >= 3.9
+- `ansible-core` >= 2.16
 
 ## Install
 
