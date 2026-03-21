@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "playbook2uml"
-version = "0.3.1"
+version = "0.4.0"
 description = "Create a PlantUML or Mermaid.js State Diagram from Ansible-Playbook/role"
 readme = "README.md"
 license = "MIT"
