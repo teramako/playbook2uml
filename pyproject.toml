@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "playbook2uml"
+version = "0.3.1"
+description = "Create a PlantUML or Mermaid.js State Diagram from Ansible-Playbook/role"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    { name = "teramako", email = "teramako@gmail.com" }
+]
+requires-python = ">=3.9"
+dependencies = [
+    "ansible-core>=2.16",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+[project.urls]
+Homepage = "https://github.com/teramako/playbook2uml"
+
+[project.scripts]
+playbook2uml = "playbook2uml.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["playbook2uml*"]
