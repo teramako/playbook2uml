@@ -23,7 +23,7 @@ class UMLStateTask(UMLStateTaskBase):
         if self.has_when:
             yield from self._generateWhenDefinition(level)
 
-        yield f'{prefix}state "{self.task.get_name()}<hr>action: {self.task.action}" as {self._name}'
+        yield f'{prefix}state "{self.task.get_name()}<hr>action: {self.task.action}" as {self.name}'
 
         if self.has_until:
             yield from self._generateUntilDefinition(level)
@@ -51,7 +51,7 @@ class UMLStateTask(UMLStateTaskBase):
         self.logger.debug(f'start {self}')
         prefix = indent * level
         if self.has_when:
-            yield '%s%s --> %s' % (prefix, self._entry_point_name, self._name)
+            yield '%s%s --> %s' % (prefix, self._entry_point_name, self.name)
             yield '%s%s --> %s' % (prefix, self._end_point_name, next.get_entry_point_name())
             yield '%s%s --> %s : %s' % (prefix, self._entry_point_name, next.get_entry_point_name(), 'skip')
         else:
@@ -60,7 +60,7 @@ class UMLStateTask(UMLStateTaskBase):
         yield from self._generateLoopRelation(level=level)
 
         if self.has_until:
-            yield '%s%s --> %s' % (prefix, self._name, self._end_point_name)
+            yield '%s%s --> %s' % (prefix, self.name, self._end_point_name)
             yield '%s%s --> %s : retry' % (prefix, self._end_point_name, self._entry_point_name)
 
         self.logger.debug(f'end {self}')
@@ -78,7 +78,7 @@ class UMLStateTask(UMLStateTaskBase):
                 loop_items.append(f' - {loop_item}')
         else:
             loop_items.append(self.task.loop)
-        yield '%s%s --> %s : %s' % (prefix, self._name, self._entry_point_name, '\\n'.join(loop_items))
+        yield '%s%s --> %s : %s' % (prefix, self.name, self._entry_point_name, '\\n'.join(loop_items))
 
 class UMLStateBlock(UMLStateBlockBase):
     ID = 1
@@ -91,8 +91,8 @@ class UMLStateBlock(UMLStateBlockBase):
         next_level = level
         prefix = indent * level
         if is_explicit:
-            yield f'{prefix}{self._name} : {self.block.name}'
-            yield f'{prefix}state {self._name} {{'
+            yield f'{prefix}{self.name} : {self.block.name}'
+            yield f'{prefix}state {self.name} {{'
             next_level+=1
 
         for task in self.tasks:
@@ -109,8 +109,8 @@ class UMLStateBlock(UMLStateBlockBase):
         if not self.has_always:
             return
         prefix = indent * level
-        yield f'{prefix}{self._name}_always : Always'
-        yield f'{prefix}state {self._name}_always {{'
+        yield f'{prefix}{self.name}_always : Always'
+        yield f'{prefix}state {self.name}_always {{'
         for task in self.always:
             yield from task.generateDefinition(level + 1)
         yield f'{prefix}}}'
@@ -119,8 +119,8 @@ class UMLStateBlock(UMLStateBlockBase):
         if not self.has_rescue:
             return
         prefix = indent * level
-        yield f'{prefix}{self._name}_rescue : Rescue'
-        yield f'{prefix}state {self._name}_rescue {{'
+        yield f'{prefix}{self.name}_rescue : Rescue'
+        yield f'{prefix}state {self.name}_rescue {{'
         for task in self.rescue:
             yield from task.generateDefinition(level + 1)
         yield f'{prefix}}}'
@@ -132,7 +132,7 @@ class UMLStatePlay(UMLStatePlayBase):
     def generateDefinition(self, level:int=0, only_role=False) -> Iterator[str]:
         self.logger.debug(f'start {self}')
         if not only_role:
-            yield '%sstate "Play: %s" as %s {' % (indent*level, self.play.get_name(), self._name)
+            yield '%sstate "Play: %s" as %s {' % (indent*level, self.play.get_name(), self.name)
             level += 1
 
         for tasks in self.get_all_tasks():

@@ -23,11 +23,11 @@ class UMLStateTask(UMLStateTaskBase):
         if self.has_when:
             yield from self._generateWhenDefinition(level)
 
-        yield '%sstate "== %s" as %s' % (prefix, self.task.get_name(), self._name)
-        yield '%s%s : Action **%s**' % (prefix, self._name, self.task.action)
+        yield '%sstate "== %s" as %s' % (prefix, self.task.get_name(), self.name)
+        yield '%s%s : Action **%s**' % (prefix, self.name, self.task.action)
         yield from self._generete_table(self.task.args, level)
         if any((getattr(self.task, attr) is not None for attr in ['become', 'register', 'delegate_to'])):
-            yield '%s%s : ....' % (prefix, self._name)
+            yield '%s%s : ....' % (prefix, self.name)
             yield from self._generateBecomeDefinition(level=level)
             yield from self._generateRegisterDefinition(level=level)
             yield from self._generateDelegateDefinition(level=level)
@@ -44,24 +44,24 @@ class UMLStateTask(UMLStateTaskBase):
                 lines = val.splitlines()
                 if len(lines) > 1:
                     val = '%s ...(+%d lines)' % (lines[0], len(lines)-1)
-            yield '%s%s : | %s | %s |' %(indent*level, self._name, key, val)
-    
+            yield '%s%s : | %s | %s |' %(indent*level, self.name, key, val)
+
     def _generateRegisterDefinition(self, level:int=0) -> Iterator[str]:
         register = self.task.register
         if not register:
             return
-        yield '%s%s : **register** //%s//' % (indent*level, self._name, register)
+        yield '%s%s : **register** //%s//' % (indent*level, self.name, register)
 
     def _generateBecomeDefinition(self, level:int=0) -> Iterator[str]:
         if self.task.become:
             if become_user := self.task.become_user:
-                yield '%s%s : **become** yes (to %s)' % (indent*level, self._name, become_user)
+                yield '%s%s : **become** yes (to %s)' % (indent*level, self.name, become_user)
             else:
-                yield '%s%s : **become** yes' % (indent*level, self._name)
+                yield '%s%s : **become** yes' % (indent*level, self.name)
 
     def _generateDelegateDefinition(self, level:int=0) -> Iterator[str]:
         if val := self.task.delegate_to:
-            yield '%s%s : **delegate_to** %s' % (indent*level, self._name, val)
+            yield '%s%s : **delegate_to** %s' % (indent*level, self.name, val)
 
     def _generateUntilDefinition(self, level:int=0) -> Iterator[str]:
         yield '%sstate %s <<choice>>' % (indent*level, self._end_point_name)
@@ -84,7 +84,7 @@ class UMLStateTask(UMLStateTaskBase):
     def generateRelation(self, next: Optional[UMLStateBase] = None, level:int=0) -> Iterator[str]:
         self.logger.debug(f'start {self}')
         if self.has_when:
-            yield '%s --> %s' % (self._entry_point_name, self._name)
+            yield '%s --> %s' % (self._entry_point_name, self.name)
             yield '%s --> %s' % (self._end_point_name, next.get_entry_point_name())
             yield '%s --> %s : %s' % (self._entry_point_name, next.get_entry_point_name(), 'skip')
         else:
@@ -93,7 +93,7 @@ class UMLStateTask(UMLStateTaskBase):
         yield from self._generateLoopRelation()
 
         if self.has_until:
-            yield '%s --> %s' % (self._name, self._end_point_name)
+            yield '%s --> %s' % (self.name, self._end_point_name)
             yield '%s --> %s : retry' % (self._end_point_name, self._entry_point_name)
 
         self.logger.debug(f'end {self}')
@@ -103,7 +103,7 @@ class UMLStateTask(UMLStateTaskBase):
             return
         loop_with = getattr(self.task, 'loop_with', None)
         loop_name = f'loop(with_{loop_with})' if loop_with else 'loop'
-        yield '%s --> %s' % (self._name, self._entry_point_name)
+        yield '%s --> %s' % (self.name, self._entry_point_name)
         yield 'note on link'
         yield '%s=== %s' % (indent, loop_name)
         yield '%s----' % indent
@@ -126,7 +126,7 @@ class UMLStateBlock(UMLStateBlockBase):
         next_level = level
         prefix = indent * level
         if is_explicit:
-            yield '%sstate "Block: %s" as %s {' % (prefix, self.block.name, self._name)
+            yield '%sstate "Block: %s" as %s {' % (prefix, self.block.name, self.name)
             next_level+=1
 
         for task in self.tasks:
@@ -143,7 +143,7 @@ class UMLStateBlock(UMLStateBlockBase):
         if not self.has_always:
             return
         prefix = indent * level
-        yield '%sstate "Always" as %s {' % (prefix, self._name + '_always')
+        yield '%sstate "Always" as %s {' % (prefix, self.name + '_always')
         for task in self.always:
             yield from task.generateDefinition(level + 1)
         yield '%s}' % prefix
@@ -152,7 +152,7 @@ class UMLStateBlock(UMLStateBlockBase):
         if not self.has_rescue:
             return
         prefix = indent * level
-        yield '%sstate "Rescue" as %s {' % (prefix, self._name + '_rescue')
+        yield '%sstate "Rescue" as %s {' % (prefix, self.name + '_rescue')
         for task in self.rescue:
             yield from task.generateDefinition(level + 1)
         yield '%s}' % prefix
@@ -170,7 +170,7 @@ class UMLStatePlay(UMLStatePlayBase):
         if len(self.play.vars_prompt) > 0:
             key_name = 'vars_files'
             for var_file in self.play.vars_files:
-                yield '%s%s : | %s | %s |' % (indent*level, self._name, key_name, var_file)
+                yield '%s%s : | %s | %s |' % (indent*level, self.name, key_name, var_file)
                 key_name = ''
 
     def _generateVarsPromptDefinition(self, level:int=0) -> Iterator[str]:
@@ -180,7 +180,7 @@ class UMLStatePlay(UMLStatePlayBase):
         if len(self.play.vars_prompt) > 0:
             key_name = 'vars_prompt'
             for prompt in self.play.vars_prompt:
-                yield '%s%s : | %s | %s |' % (indent*level, self._name, key_name, prompt['name'])
+                yield '%s%s : | %s | %s |' % (indent*level, self.name, key_name, prompt['name'])
                 key_name = ''
 
     def _get_play_metadata(self) -> Iterator[Tuple[str, str]]:
@@ -199,10 +199,10 @@ class UMLStatePlay(UMLStatePlayBase):
     def generateDefinition(self, level:int=0, only_role=False) -> Iterator[str]:
         self.logger.debug(f'start {self}')
         if not only_role:
-            yield '%sstate "= Play: %s" as %s {' % (indent*level, self.play.get_name(), self._name)
+            yield '%sstate "= Play: %s" as %s {' % (indent*level, self.play.get_name(), self.name)
             level += 1
             for (meta_key, meta_value) in self._get_play_metadata():
-                yield '%s%s : | %s | %s |' % (indent*level, self._name, meta_key, meta_value)
+                yield '%s%s : | %s | %s |' % (indent*level, self.name, meta_key, meta_value)
 
             yield from self._generateVarsFilesDefition(level=level)
             yield from self._generateVarsPromptDefinition(level=level)

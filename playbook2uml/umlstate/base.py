@@ -19,6 +19,11 @@ __metaclass__ = type
 indent = '    '
 
 class UMLStateBase(metaclass=ABCMeta):
+    name: str
+    """
+    UMLState diagram's identifier
+    """
+
     @abstractmethod
     def generateDefinition(self, level:int=0) -> Iterator[str]:
         pass
@@ -36,7 +41,7 @@ class UMLStateBase(metaclass=ABCMeta):
         pass
 
     def __str__(self) -> str:
-        return f"<{self.__class__.__name__}({self._name})>"
+        return f"<{self.__class__.__name__}({self.name})>"
 
 def pair_state_iter(*args) -> Iterator[Tuple[UMLStateBase, UMLStateBase]]:
     current = args[0]
@@ -58,21 +63,21 @@ class UMLStateTaskBase(UMLStateBase, metaclass=ABCMeta):
         self.id = self.__class__.ID
         self.__class__.ID += 1
 
-        self._name = 'task_%d' % self.id
-        self.logger.debug(f'set name "{self._name}"')
-        self._entry_point_name = self._name
-        self._end_point_name = self._name
+        self.name = 'task_%d' % self.id
+        self.logger.debug(f'set name "{self.name}"')
+        self._entry_point_name = self.name
+        self._end_point_name = self.name
         self.when = self.get_when_list(self.task)
         self.has_when = len(self.when) > 0
         if self.has_when:
-            self._entry_point_name = '%s_when' % self._name
-            self.logger.debug(f'{self._name} has `when`. set `_entry_point_name "{self._entry_point_name}"')
+            self._entry_point_name = '%s_when' % self.name
+            self.logger.debug(f'{self.name} has `when`. set `_entry_point_name "{self._entry_point_name}"')
 
         self.has_until = False
         if self.task.until:
             self.has_until = True
-            self._end_point_name = '%s_until' % self._name
-            self.logger.debug(f'{self._name} has `until`. set `_end_point_name "{self._end_point_name}"')
+            self._end_point_name = '%s_until' % self.name
+            self.logger.debug(f'{self.name} has `until`. set `_end_point_name "{self._end_point_name}"')
 
         self.logger.debug('end')
 
@@ -129,7 +134,7 @@ class UMLStateBlockBase(UMLStateBase, metaclass=ABCMeta):
         self.block = block
         self.id = self.__class__.ID
         self.__class__.ID += 1
-        self._name = 'block_%d' % self.id
+        self.name = 'block_%d' % self.id
         self.logger.debug(f'start: {self}')
         self.tasks = tuple(self.load_tasks(block.block))
         self.always = tuple(self.load_tasks(block.always))
@@ -183,7 +188,7 @@ class UMLStatePlayBase(UMLStateBase, metaclass=ABCMeta):
         self.play = play
         self.id = self.__class__.ID
         self.__class__.ID += 1
-        self._name = 'play_%d' % self.id
+        self.name = 'play_%d' % self.id
         self.pre_tasks = tuple(self.BLOCK_CLASS.load_tasks(play.pre_tasks))
         self.roles = tuple(self.BLOCK_CLASS.load_tasks(
             block for role in play.roles if not getattr(role, 'from_include', getattr(role, '_from_include', False))
