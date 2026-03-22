@@ -52,12 +52,13 @@ class UMLStateTask(UMLStateTaskBase):
     def generateRelation(self, next: Optional[UMLStateBase], level:int=0) -> Iterator[str]:
         self.logger.debug(f'start {self}')
         prefix = indent * level
-        if self.has_when:
-            yield '%s%s --> %s' % (prefix, self._entry_point_name, self.name)
-            yield '%s%s --> %s' % (prefix, self._end_point_name, next.get_entry_point_name())
-            yield '%s%s --> %s : %s' % (prefix, self._entry_point_name, next.get_entry_point_name(), 'skip')
-        else:
-            yield '%s%s --> %s' % (prefix, self._end_point_name, next.get_entry_point_name())
+        if next is not None:
+            if self.has_when:
+                yield '%s%s --> %s' % (prefix, self._entry_point_name, self.name)
+                yield '%s%s --> %s' % (prefix, self._end_point_name, next.get_entry_point_name())
+                yield '%s%s --> %s : %s' % (prefix, self._entry_point_name, next.get_entry_point_name(), 'skip')
+            else:
+                yield '%s%s --> %s' % (prefix, self._end_point_name, next.get_entry_point_name())
 
         yield from self._generateLoopRelation(level=level)
 

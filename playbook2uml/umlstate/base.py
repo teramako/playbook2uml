@@ -181,7 +181,10 @@ class UMLStateStart(UMLStateBase):
 
     @override
     def generateRelation(self, next:Optional[UMLStateBase], level:int=0) -> Iterator[str]:
-        self.logger.debug('end')
+        if next is not None:
+            self.logger.debug('start')
+            yield '%s[*] --> %s' % (indent * level, next.get_entry_point_name())
+            self.logger.debug('end')
 
     @override
     def get_entry_point_name(self) -> str:
