@@ -106,7 +106,7 @@ class UMLStateBlockBase(UMLStateBase, metaclass=ABCMeta):
         if block.name or len(block.always) > 0 or len(block.rescue) > 0:
             cls.logger.debug(f'load block as explicit: {cls.ID}')
             yield cls(block)
-        else:
+        elif isinstance(block.block, Iterable):
             cls.logger.debug(f'load block as implicit')
             for task in block.block:
                 if isinstance(task, Block):
@@ -136,9 +136,12 @@ class UMLStateBlockBase(UMLStateBase, metaclass=ABCMeta):
         self.__class__.ID += 1
         self.name = 'block_%d' % self.id
         self.logger.debug(f'start: {self}')
-        self.tasks = tuple(self.load_tasks(block.block))
-        self.always = tuple(self.load_tasks(block.always))
-        self.rescue = tuple(task for task in self.load_tasks(block.rescue))
+        if isinstance(block.block, Iterable):
+            self.tasks = tuple(self.load_tasks(block.block))
+        if isinstance(block.always, Iterable):
+            self.always = tuple(self.load_tasks(block.always))
+        if isinstance(block.rescue, Iterable):
+            self.rescue = tuple(task for task in self.load_tasks(block.rescue))
         self.has_always = len(self.always) > 0
         self.has_rescue = len(self.rescue) > 0
 
@@ -189,12 +192,16 @@ class UMLStatePlayBase(UMLStateBase, metaclass=ABCMeta):
         self.id = self.__class__.ID
         self.__class__.ID += 1
         self.name = 'play_%d' % self.id
-        self.pre_tasks = tuple(self.BLOCK_CLASS.load_tasks(play.pre_tasks))
-        self.roles = tuple(self.BLOCK_CLASS.load_tasks(
-            block for role in play.roles if not getattr(role, 'from_include', getattr(role, '_from_include', False))
-            for block in role.get_task_blocks()))
-        self.tasks = tuple(self.BLOCK_CLASS.load_tasks(play.tasks))
-        self.post_tasks = tuple(self.BLOCK_CLASS.load_tasks(play.post_tasks))
+        if isinstance(play.pre_tasks, Iterable):
+            self.pre_tasks = tuple(self.BLOCK_CLASS.load_tasks(play.pre_tasks))
+        if isinstance(play.roles, Iterable):
+            self.roles = tuple(self.BLOCK_CLASS.load_tasks(
+                block for role in play.roles if not getattr(role, 'from_include', getattr(role, '_from_include', False))
+                for block in role.get_task_blocks()))
+        if isinstance(play.tasks, Iterable):
+            self.tasks = tuple(self.BLOCK_CLASS.load_tasks(play.tasks))
+        if isinstance(play.post_tasks, Iterable):
+            self.post_tasks = tuple(self.BLOCK_CLASS.load_tasks(play.post_tasks))
         self.logger.debug(f'{self}: {len(self.pre_tasks)} pre_tasks: {[str(t) for t in self.pre_tasks]}')
         self.logger.debug(f'{self}: {len(self.roles)} roles: {[str(t) for t in self.roles]}')
         self.logger.debug(f'{self}: {len(self.tasks)} tasks: {[str(t) for t in self.tasks]}')

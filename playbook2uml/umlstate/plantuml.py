@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import (absolute_import, division, print_function, annotations)
 from typing import ClassVar, Iterator, Optional, Tuple, Any
+from collections.abc import Iterable
 from playbook2uml.umlstate.base import (
     indent,
     logger,
@@ -167,7 +168,7 @@ class UMLStatePlay(UMLStatePlayBase):
         '''
         generate `vars_files` definition
         '''
-        if len(self.play.vars_prompt) > 0:
+        if isinstance(self.play.vars_files, Iterable):
             key_name = 'vars_files'
             for var_file in self.play.vars_files:
                 yield '%s%s : | %s | %s |' % (indent*level, self.name, key_name, var_file)
@@ -177,7 +178,7 @@ class UMLStatePlay(UMLStatePlayBase):
         '''
         generate `vars_prompt` definition
         '''
-        if len(self.play.vars_prompt) > 0:
+        if isinstance(self.play.vars_prompt, Iterable):
             key_name = 'vars_prompt'
             for prompt in self.play.vars_prompt:
                 yield '%s%s : | %s | %s |' % (indent*level, self.name, key_name, prompt['name'])
