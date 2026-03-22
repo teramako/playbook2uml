@@ -1,7 +1,7 @@
 #!env python
 # -*- coding: utf-8 -*-
 from __future__ import (absolute_import, division, print_function, annotations)
-from typing import ClassVar, Iterator, Optional, override
+from typing import Iterator, Optional, override
 from playbook2uml.umlstate.base import (
     indent,
     logger,
@@ -15,7 +15,6 @@ from playbook2uml.umlstate.base import (
 )
 
 class UMLStateTask(UMLStateTaskBase):
-    ID : ClassVar[int] = 1
 
     @override
     def generateDefinition(self, level:int=0) -> Iterator[str]:
@@ -84,7 +83,6 @@ class UMLStateTask(UMLStateTaskBase):
         yield '%s%s --> %s : %s' % (prefix, self.name, self._entry_point_name, '\\n'.join(loop_items))
 
 class UMLStateBlock(UMLStateBlockBase):
-    ID = 1
 
     TASK_CLASS = UMLStateTask
 
@@ -130,7 +128,6 @@ class UMLStateBlock(UMLStateBlockBase):
         yield f'{prefix}}}'
 
 class UMLStatePlay(UMLStatePlayBase):
-    ID = 1
     BLOCK_CLASS = UMLStateBlock
 
     @override

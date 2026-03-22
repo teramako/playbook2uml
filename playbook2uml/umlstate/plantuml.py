@@ -1,7 +1,7 @@
 #!env python
 # -*- coding: utf-8 -*-
 from __future__ import (absolute_import, division, print_function, annotations)
-from typing import ClassVar, Iterator, Optional, Tuple, override
+from typing import Iterator, Optional, Tuple, override
 from collections.abc import Iterable
 from playbook2uml.umlstate.base import (
     indent,
@@ -16,7 +16,6 @@ from playbook2uml.umlstate.base import (
 )
 
 class UMLStateTask(UMLStateTaskBase):
-    ID : ClassVar[int] = 1
 
     @override
     def generateDefinition(self, level:int=0) -> Iterator[str]:
@@ -120,7 +119,6 @@ class UMLStateTask(UMLStateTaskBase):
         yield 'end note'
 
 class UMLStateBlock(UMLStateBlockBase):
-    ID = 1
 
     TASK_CLASS = UMLStateTask
 
@@ -163,7 +161,6 @@ class UMLStateBlock(UMLStateBlockBase):
         yield '%s}' % prefix
     
 class UMLStatePlay(UMLStatePlayBase):
-    ID = 1
     BLOCK_CLASS = UMLStateBlock
 
     METADATA_KEYS = ('hosts', 'strategy', 'serial', 'gather_facts')

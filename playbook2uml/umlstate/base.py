@@ -50,7 +50,7 @@ def pair_state_iter(*args) -> Iterator[Tuple[UMLStateBase, UMLStateBase]]:
         current = next
 
 class UMLStateTaskBase(UMLStateBase, metaclass=ABCMeta):
-    ID : ClassVar[int]
+    ID: ClassVar[int]
     logger : ClassVar[Logger] = logger.getChild("UMLStateTask")
     def __init__(self, task:Task) -> None:
         self.logger.debug('start')
@@ -99,8 +99,8 @@ class UMLStateTaskBase(UMLStateBase, metaclass=ABCMeta):
         return self._end_point_name
 
 class UMLStateBlockBase(UMLStateBase, metaclass=ABCMeta):
-    ID : ClassVar[int] = 1
-    TASK_CLASS: ClassVar[UMLStateTaskBase]
+    ID: ClassVar[int]
+    TASK_CLASS: ClassVar[type[UMLStateTaskBase]]
     logger : ClassVar[Logger] = logger.getChild("UMLStateBlock")
 
     @classmethod
@@ -195,8 +195,8 @@ class UMLStateStart(UMLStateBase):
         return '[*]'
 
 class UMLStatePlayBase(UMLStateBase, metaclass=ABCMeta):
-    ID = 1
-    BLOCK_CLASS: UMLStateBlockBase
+    ID: ClassVar[int]
+    BLOCK_CLASS: ClassVar[type[UMLStateBlockBase]]
     logger = logger.getChild("UMLStatePlay")
 
     def __init__(self, play:Play) -> None:
@@ -234,9 +234,10 @@ class UMLStatePlayBase(UMLStateBase, metaclass=ABCMeta):
 
 class UMLStatePlaybookBase(metaclass=ABCMeta):
     logger = logger.getChild('UMLStatePlaybook')
-    PLAY_CLASS: UMLStatePlayBase
-    BLOCK_CLASS: UMLStateBlockBase
-    TASK_CLASS: UMLStateTaskBase
+    PLAY_CLASS: ClassVar[type[UMLStatePlayBase]]
+    BLOCK_CLASS: ClassVar[type[UMLStateBlockBase]]
+    TASK_CLASS: ClassVar[type[UMLStateTaskBase]]
+
     def __init__(self, playbook:str, option:Namespace=None):
         self.logger.debug('start')
         self.PLAY_CLASS.ID = 1
