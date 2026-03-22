@@ -79,7 +79,7 @@ class UMLStateTask(UMLStateTaskBase):
             for loop_item in self.task.loop:
                 loop_items.append(f' - {loop_item}')
         else:
-            loop_items.append(self.task.loop)
+            loop_items.append(str(self.task.loop))
         yield '%s%s --> %s : %s' % (prefix, self.name, self._entry_point_name, '\\n'.join(loop_items))
 
 class UMLStateBlock(UMLStateBlockBase):
