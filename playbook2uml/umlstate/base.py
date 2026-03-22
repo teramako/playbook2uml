@@ -1,5 +1,5 @@
 from __future__ import (absolute_import, division, print_function, annotations)
-from typing import ClassVar, Iterator, Optional, Tuple
+from typing import ClassVar, Iterator, Optional, Tuple, override
 from collections.abc import Iterable
 from abc import ABCMeta, abstractmethod
 from argparse import Namespace
@@ -29,7 +29,7 @@ class UMLStateBase(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def generateRelation(self, next:Optional[UMLStateBase] = None, level:int=0) -> Iterator[str]:
+    def generateRelation(self, next:Optional[UMLStateBase], level:int=0) -> Iterator[str]:
         pass
 
     @abstractmethod
@@ -90,9 +90,11 @@ class UMLStateTaskBase(UMLStateBase, metaclass=ABCMeta):
         else:
             return [when]
 
+    @override
     def get_entry_point_name(self) -> str:
         return self._entry_point_name
 
+    @override
     def get_end_point_name(self) -> str:
         return self._end_point_name
 
@@ -147,15 +149,18 @@ class UMLStateBlockBase(UMLStateBase, metaclass=ABCMeta):
 
         self.logger.debug(f'end: {self}')
 
+    @override
     def get_entry_point_name(self) -> str:
         return self.tasks[0].get_entry_point_name()
 
+    @override
     def get_end_point_name(self) -> str:
         if self.has_always:
             return self.always[-1].get_end_point_name()
         return self.tasks[-1].get_end_point_name()
 
-    def generateRelation(self, next:UMLStateBase, level:int=0) -> Iterator[str]:
+    @override
+    def generateRelation(self, next:Optional[UMLStateBase], level:int=0) -> Iterator[str]:
         self.logger.debug(f'start {self}')
         for current_state, next_state in pair_state_iter(*self.tasks, *self.always, next):
             yield from current_state.generateRelation(next_state, level=level)
@@ -170,14 +175,19 @@ class UMLStateBlockBase(UMLStateBase, metaclass=ABCMeta):
 class UMLStateStart(UMLStateBase):
     logger = logger.getChild('UMLStateStart')
 
+    @override
     def generateDefinition(self, level: int = 0) -> Iterator[str]:
         return
-    def generateRelation(self, next:UMLStateBase, level:int=0) -> Iterator[str]:
-        self.logger.debug('start')
-        yield '%s[*] --> %s' % (indent * level, next.get_entry_point_name())
+
+    @override
+    def generateRelation(self, next:Optional[UMLStateBase], level:int=0) -> Iterator[str]:
         self.logger.debug('end')
+
+    @override
     def get_entry_point_name(self) -> str:
         return '[*]'
+
+    @override
     def get_end_point_name(self) -> str:
         return '[*]'
 
@@ -211,9 +221,11 @@ class UMLStatePlayBase(UMLStateBase, metaclass=ABCMeta):
     def get_all_tasks(self) -> list[UMLStateBase]:
         return self.pre_tasks + self.roles + self.tasks + self.post_tasks
 
+    @override
     def get_entry_point_name(self) -> str:
         return self.get_all_tasks()[0].get_entry_point_name()
 
+    @override
     def get_end_point_name(self) -> str:
         return self.get_all_tasks()[-1].get_end_point_name()
 

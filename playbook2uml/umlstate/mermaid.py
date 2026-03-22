@@ -1,7 +1,7 @@
 #!env python
 # -*- coding: utf-8 -*-
 from __future__ import (absolute_import, division, print_function, annotations)
-from typing import ClassVar, Iterator, Optional
+from typing import ClassVar, Iterator, Optional, override
 from playbook2uml.umlstate.base import (
     indent,
     logger,
@@ -17,6 +17,7 @@ from playbook2uml.umlstate.base import (
 class UMLStateTask(UMLStateTaskBase):
     ID : ClassVar[int] = 1
 
+    @override
     def generateDefinition(self, level:int=0) -> Iterator[str]:
         self.logger.debug(f'start {self}')
         prefix = indent * level
@@ -47,7 +48,8 @@ class UMLStateTask(UMLStateTaskBase):
             yield '%s - %s' % (note_indent, when)
         yield '%send note' % (indent*level)
 
-    def generateRelation(self, next: Optional[UMLStateBase] = None, level:int=0) -> Iterator[str]:
+    @override
+    def generateRelation(self, next: Optional[UMLStateBase], level:int=0) -> Iterator[str]:
         self.logger.debug(f'start {self}')
         prefix = indent * level
         if self.has_when:
@@ -85,6 +87,7 @@ class UMLStateBlock(UMLStateBlockBase):
 
     TASK_CLASS = UMLStateTask
 
+    @override
     def generateDefinition(self, level:int=0) -> Iterator[str]:
         self.logger.debug(f'start {self}')
         is_explicit = self.block.name or self.has_always or self.has_rescue
@@ -129,6 +132,7 @@ class UMLStatePlay(UMLStatePlayBase):
     ID = 1
     BLOCK_CLASS = UMLStateBlock
 
+    @override
     def generateDefinition(self, level:int=0, only_role=False) -> Iterator[str]:
         self.logger.debug(f'start {self}')
         if not only_role:
@@ -143,9 +147,10 @@ class UMLStatePlay(UMLStatePlayBase):
 
         self.logger.debug(f'end {self}')
 
-    def generateRelation(self, next_play:UMLStatePlay=None, level=0) -> Iterator[str]:
+    @override
+    def generateRelation(self, next:Optional[UMLStateBase], level:int=0) -> Iterator[str]:
         self.logger.debug(f'start {self}')
-        for current_state, next_state in pair_state_iter(*self.get_all_tasks(), next_play):
+        for current_state, next_state in pair_state_iter(*self.get_all_tasks(), next):
             yield from current_state.generateRelation(next_state, level=level)
 
         self.logger.debug(f'end {self}')
@@ -156,6 +161,7 @@ class UMLStatePlaybook(UMLStatePlaybookBase):
     BLOCK_CLASS = UMLStateBlock
     TASK_CLASS  = UMLStateTask
 
+    @override
     def generate(self) -> Iterator[str]:
         '''
         Generate Mermaid.js codes

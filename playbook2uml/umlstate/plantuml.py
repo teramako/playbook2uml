@@ -1,7 +1,7 @@
 #!env python
 # -*- coding: utf-8 -*-
 from __future__ import (absolute_import, division, print_function, annotations)
-from typing import ClassVar, Iterator, Optional, Tuple, Any
+from typing import ClassVar, Iterator, Optional, Tuple, override
 from collections.abc import Iterable
 from playbook2uml.umlstate.base import (
     indent,
@@ -18,6 +18,7 @@ from playbook2uml.umlstate.base import (
 class UMLStateTask(UMLStateTaskBase):
     ID : ClassVar[int] = 1
 
+    @override
     def generateDefinition(self, level:int=0) -> Iterator[str]:
         self.logger.debug(f'start {self}')
         prefix = indent * level
@@ -82,7 +83,8 @@ class UMLStateTask(UMLStateTaskBase):
             yield '%s - %s' % (note_indent, when)
         yield '%send note' % (indent*level)
 
-    def generateRelation(self, next: Optional[UMLStateBase] = None, level:int=0) -> Iterator[str]:
+    @override
+    def generateRelation(self, next: Optional[UMLStateBase], level:int=0) -> Iterator[str]:
         self.logger.debug(f'start {self}')
         if self.has_when:
             yield '%s --> %s' % (self._entry_point_name, self.name)
@@ -121,6 +123,7 @@ class UMLStateBlock(UMLStateBlockBase):
 
     TASK_CLASS = UMLStateTask
 
+    @override
     def generateDefinition(self, level:int=0) -> Iterator[str]:
         self.logger.debug(f'start {self}')
         is_explicit = self.block.name or self.has_always or self.has_rescue
@@ -197,6 +200,7 @@ class UMLStatePlay(UMLStatePlayBase):
 
             yield (key, value)
 
+    @override
     def generateDefinition(self, level:int=0, only_role=False) -> Iterator[str]:
         self.logger.debug(f'start {self}')
         if not only_role:
@@ -216,9 +220,10 @@ class UMLStatePlay(UMLStatePlayBase):
 
         self.logger.debug(f'end {self}')
 
-    def generateRelation(self, next_play:UMLStatePlay=None, level:int=0) -> Iterator[str]:
+    @override
+    def generateRelation(self, next:Optional[UMLStateBase], level:int=0) -> Iterator[str]:
         self.logger.debug(f'start {self}')
-        for current_state, next_state in pair_state_iter(*self.get_all_tasks(), next_play):
+        for current_state, next_state in pair_state_iter(*self.get_all_tasks(), next):
             yield from current_state.generateRelation(next_state)
 
         self.logger.debug(f'end {self}')
@@ -229,6 +234,7 @@ class UMLStatePlaybook(UMLStatePlaybookBase):
     BLOCK_CLASS = UMLStateBlock
     TASK_CLASS  = UMLStateTask
 
+    @override
     def generate(self) -> Iterator[str]:
         '''
         Generate PlantUML codes
