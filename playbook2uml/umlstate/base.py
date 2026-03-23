@@ -216,7 +216,7 @@ class UMLStatePlayBase(UMLStateBase, metaclass=ABCMeta):
         self.logger.debug(f'{self}: {len(self.post_tasks)} post_tasks: {[str(t) for t in self.post_tasks]}')
         self.logger.debug('end')
 
-    def get_all_tasks(self) -> list[UMLStateBase]:
+    def get_all_tasks(self) -> tuple[UMLStateBase, ...]:
         return self.pre_tasks + self.roles + self.tasks + self.post_tasks
 
     @override
