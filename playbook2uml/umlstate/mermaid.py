@@ -15,6 +15,13 @@ from playbook2uml.umlstate.base import (
 )
 
 class UMLStateTask(UMLStateTaskBase):
+    """
+    UMLStateTask represents a task state in a UML state diagram for Mermaid syntax.
+
+    This class generates UML state definitions and relations for Ansible playbook tasks,
+    including support for conditional execution (when), retry loops (until), and iterative
+    loops (loop).
+    """
 
     @override
     def generateDefinition(self, level:int=0) -> Iterator[str]:
@@ -83,6 +90,13 @@ class UMLStateTask(UMLStateTaskBase):
         yield '%s%s --> %s : %s' % (prefix, self.name, self._entry_point_name, '\\n'.join(loop_items))
 
 class UMLStateBlock(UMLStateBlockBase):
+    """
+    A UML state block generator for Mermaid diagram syntax.
+
+    This class extends UMLStateBlockBase to generate Mermaid state diagram definitions
+    for Ansible playbook blocks, including support for task execution, always blocks,
+    and rescue (error handling) blocks.
+    """
 
     TASK_CLASS = UMLStateTask
 
@@ -128,6 +142,13 @@ class UMLStateBlock(UMLStateBlockBase):
         yield f'{prefix}}}'
 
 class UMLStatePlay(UMLStatePlayBase):
+    """
+    Represents a UML state diagram for an Ansible play.
+
+    This class generates Mermaid state diagram definitions and relations for a play,
+    which contains multiple tasks organized in blocks.
+    """
+
     BLOCK_CLASS = UMLStateBlock
 
     @override
@@ -154,6 +175,15 @@ class UMLStatePlay(UMLStatePlayBase):
         self.logger.debug(f'end {self}')
 
 class UMLStatePlaybook(UMLStatePlaybookBase):
+    """
+    A class that generates Mermaid.js state diagram code from Ansible playbook structures.
+
+    This class orchestrates the generation of Mermaid.js stateDiagram-v2 syntax by:
+    1. Generating state definitions for all plays, blocks, and tasks
+    2. Generating state transitions/relations between states
+    3. Optionally filtering by role when specified in options
+    4. Supporting left-to-right diagram direction
+    """
 
     PLAY_CLASS  = UMLStatePlay
     BLOCK_CLASS = UMLStateBlock

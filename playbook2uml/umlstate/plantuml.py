@@ -16,6 +16,13 @@ from playbook2uml.umlstate.base import (
 )
 
 class UMLStateTask(UMLStateTaskBase):
+    """
+    UMLStateTask class for generating PlantUML state diagram definitions for Ansible tasks.
+
+    This class extends UMLStateTaskBase to create PlantUML state definitions that represent
+    Ansible task execution with support for conditionals (when), loops, retries (until),
+    and task metadata like become, register, and delegate_to.
+    """
 
     @override
     def generateDefinition(self, level:int=0) -> Iterator[str]:
@@ -119,6 +126,11 @@ class UMLStateTask(UMLStateTaskBase):
         yield 'end note'
 
 class UMLStateBlock(UMLStateBlockBase):
+    """
+    UMLStateBlock represents a PlantUML state block for Ansible playbook tasks.
+    This class extends UMLStateBlockBase and generates PlantUML state diagram definitions
+    for block structures, including task execution, always blocks, and rescue blocks.
+    """
 
     TASK_CLASS = UMLStateTask
 
@@ -141,7 +153,7 @@ class UMLStateBlock(UMLStateBlockBase):
             yield '%s}' % prefix
 
         self.logger.debug(f'end {self}')
-    
+
     def _generateAlwaysDefinition(self, level:int=0) -> Iterator[str]:
         if not self.has_always:
             return
@@ -150,7 +162,7 @@ class UMLStateBlock(UMLStateBlockBase):
         for task in self.always:
             yield from task.generateDefinition(level + 1)
         yield '%s}' % prefix
-    
+
     def _generateRescueDefinition(self, level:int=0) -> Iterator[str]:
         if not self.has_rescue:
             return
@@ -159,8 +171,18 @@ class UMLStateBlock(UMLStateBlockBase):
         for task in self.rescue:
             yield from task.generateDefinition(level + 1)
         yield '%s}' % prefix
-    
+
 class UMLStatePlay(UMLStatePlayBase):
+    """
+    UMLStatePlay
+
+    A class representing a Play state in UML diagrams for Ansible playbooks.
+
+    This class generates PlantUML state definitions and relations for Ansible plays,
+    including metadata (hosts, strategy, serial, gather_facts), variables files,
+    and variable prompts.
+    """
+
     BLOCK_CLASS = UMLStateBlock
 
     METADATA_KEYS = ('hosts', 'strategy', 'serial', 'gather_facts')
@@ -227,6 +249,14 @@ class UMLStatePlay(UMLStatePlayBase):
         self.logger.debug(f'end {self}')
 
 class UMLStatePlaybook(UMLStatePlaybookBase):
+    """
+    A UML state diagram generator for Ansible playbooks using PlantUML format.
+
+    This class extends UMLStatePlaybookBase to convert Ansible playbook structures
+    into PlantUML state diagram syntax. It manages the generation of UML definitions
+    and state transitions with support for customization options like titles, themes,
+    and layout direction.
+    """
 
     PLAY_CLASS  = UMLStatePlay
     BLOCK_CLASS = UMLStateBlock
@@ -234,9 +264,25 @@ class UMLStatePlaybook(UMLStatePlaybookBase):
 
     @override
     def generate(self) -> Iterator[str]:
-        '''
-        Generate PlantUML codes
-        '''
+        """
+        Generate PlantUML diagram code from playbook state definitions.
+
+        Yields PlantUML directives and definitions including:
+        - Start/end markers (@startuml/@enduml)
+        - Optional title, theme, and layout direction settings
+        - State definitions for all plays in the playbook
+        - State transition relations
+
+        The generation respects the role filter option if specified.
+
+        Yields:
+            str: Individual lines of PlantUML code
+
+        Logs:
+            - Info messages for generation start/end and phase progress
+            - Debug messages for applied options (title, theme, direction)
+        """
+
         self.logger.info('START [PlantUML]')
         only_role = False
         yield '@startuml'

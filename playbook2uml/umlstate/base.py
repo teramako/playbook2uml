@@ -19,6 +19,14 @@ __metaclass__ = type
 indent = '    '
 
 class UMLStateBase(metaclass=ABCMeta):
+    """
+    Abstract base class for UML State diagram elements.
+
+    This class defines the interface for objects that can be represented in UML State diagrams.
+    It provides abstract methods for generating diagram definitions, managing state relations,
+    and handling entry/exit points.
+    """
+
     name: str
     """
     UMLState diagram's identifier
@@ -26,6 +34,9 @@ class UMLStateBase(metaclass=ABCMeta):
 
     @abstractmethod
     def generateDefinition(self, level:int=0) -> Iterator[str]:
+        """
+        Generate UMLState diagram's definition
+        """
         pass
 
     @abstractmethod
@@ -34,24 +45,59 @@ class UMLStateBase(metaclass=ABCMeta):
 
     @abstractmethod
     def get_entry_point_name(self) -> str:
+        """
+        Get the name of the entry point.
+
+        Returns:
+            str: The name of the entry point.
+        """
         pass
 
     @abstractmethod
     def get_end_point_name(self) -> str:
+        """
+        Get the name of the end point.
+
+        Returns:
+            str: The name of the end point.
+        """
         pass
 
     def __str__(self) -> str:
         return f"<{self.__class__.__name__}({self.name})>"
 
 def pair_state_iter(*args) -> Iterator[Tuple[UMLStateBase, UMLStateBase | None]]:
+    """
+    Iterate over consecutive pairs of states from the given arguments.
+
+    Yields tuples of (current_state, next_state) for each consecutive pair
+    of states in the input arguments. The last state is paired with None.
+
+    Example:
+        >>> states = [state1, state2, state3]
+        >>> for current, next_state in pair_state_iter(*states):
+        ...     print(current, next_state)
+        # Output:
+        # state1 state2
+        # state2 state3
+        # state3 None
+    """
     current = args[0]
     for next in args[1:]:
         yield (current, next)
         current = next
 
 class UMLStateTaskBase(UMLStateBase, metaclass=ABCMeta):
+    """
+    UMLStateTaskBase is an abstract base class that represents a UML state for an Ansible task.
+
+    This class manages the lifecycle and metadata of a task within a UML state diagram,
+    including task naming, conditional logic (when), and loop logic (until).
+    """
+
     ID: ClassVar[int]
     logger : ClassVar[Logger] = logger.getChild("UMLStateTask")
+
     def __init__(self, task:Task) -> None:
         self.logger.debug('start')
         self.task = task
@@ -94,6 +140,14 @@ class UMLStateTaskBase(UMLStateBase, metaclass=ABCMeta):
         return self._end_point_name
 
 class UMLStateBlockBase(UMLStateBase, metaclass=ABCMeta):
+    """
+    Abstract base class for UML state blocks in Ansible playbook diagrams.
+
+    This class represents a block construct in Ansible playbooks and manages the conversion
+    of block structures (including tasks, rescue, and always sections) into UML state diagram
+    elements.
+    """
+
     ID: ClassVar[int]
     TASK_CLASS: ClassVar[type[UMLStateTaskBase]]
     logger : ClassVar[Logger] = logger.getChild("UMLStateBlock")
@@ -168,6 +222,12 @@ class UMLStateBlockBase(UMLStateBase, metaclass=ABCMeta):
         self.logger.debug(f'end {self}')
 
 class UMLStateStart(UMLStateBase):
+    """
+    UMLStateStart represents the initial state in a UML state diagram.
+
+    This class generates the start point notation '[*]' for UML state diagrams
+    and handles transitions from the start state to the next state.
+    """
     logger = logger.getChild('UMLStateStart')
 
     @override
@@ -190,6 +250,14 @@ class UMLStateStart(UMLStateBase):
         return '[*]'
 
 class UMLStatePlayBase(UMLStateBase, metaclass=ABCMeta):
+    """
+    A base class for representing UML state diagrams of Ansible plays.
+
+    This class extends UMLStateBase and serves as an abstract base for play-level state
+    representations. It manages the hierarchical structure of play components including
+    pre-tasks, roles, tasks, and post-tasks.
+    """
+
     ID: ClassVar[int]
     BLOCK_CLASS: ClassVar[type[UMLStateBlockBase]]
     logger = logger.getChild("UMLStatePlay")
@@ -228,12 +296,46 @@ class UMLStatePlayBase(UMLStateBase, metaclass=ABCMeta):
         return self.get_all_tasks()[-1].get_end_point_name()
 
 class UMLStatePlaybookBase(metaclass=ABCMeta):
+    """
+    Abstract base class for converting Ansible playbooks to UML state diagrams.
+
+    This class handles loading and parsing Ansible playbook data, supporting both
+    full playbook parsing and role-only modes. It initializes the necessary Ansible
+    loaders and variable managers, then converts plays into UML state representations.
+
+    Raises:
+        Various Ansible loader exceptions if the playbook or role cannot be loaded.
+
+    Note:
+        When option.role is specified, a dummy playbook is created that imports only
+        the specified role. Otherwise, all plays from the playbook file are loaded.
+    """
+
     logger = logger.getChild('UMLStatePlaybook')
     PLAY_CLASS: ClassVar[type[UMLStatePlayBase]]
     BLOCK_CLASS: ClassVar[type[UMLStateBlockBase]]
     TASK_CLASS: ClassVar[type[UMLStateTaskBase]]
 
     def __init__(self, playbook:str, option:Namespace):
+        """
+        Initialize the UML state generator from an Ansible playbook or role.
+
+        Args:
+            playbook (str): Path to the Ansible playbook file to parse.
+            option (Namespace): Configuration options containing:
+                - role (str, optional): Role name to load instead of playbook
+                - tasks_from (str, optional): Specific tasks file to import from the role
+                - BASE_DIR (str): Base directory for loading roles and playbooks
+
+        Initializes the playbook parser by:
+        - Setting up Ansible's DataLoader and VariableManager
+        - Creating PLAY, BLOCK, and TASK class instances with ID counters
+        - Loading either a dummy play (if role mode) or the full playbook
+        - Storing the plays and options for later processing
+
+        In role mode, creates a dummy playbook that imports the specified role.
+        In playbook mode, loads all plays from the given playbook file.
+        """
         self.logger.debug('start')
         self.PLAY_CLASS.ID = 1
         self.BLOCK_CLASS.ID = 1
