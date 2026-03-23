@@ -1,7 +1,7 @@
 #!env python
 # -*- coding: utf-8 -*-
 from __future__ import (absolute_import, division, print_function, annotations)
-from typing import Iterator, Optional, Tuple, override
+from typing import Iterator, Optional, Tuple
 from collections.abc import Iterable
 from playbook2uml.umlstate.base import (
     indent,
@@ -24,7 +24,6 @@ class UMLStateTask(UMLStateTaskBase):
     and task metadata like become, register, and delegate_to.
     """
 
-    @override
     def generateDefinition(self, level:int=0) -> Iterator[str]:
         self.logger.debug(f'start {self}')
         prefix = indent * level
@@ -89,7 +88,6 @@ class UMLStateTask(UMLStateTaskBase):
             yield '%s - %s' % (note_indent, when)
         yield '%send note' % (indent*level)
 
-    @override
     def generateRelation(self, next: Optional[UMLStateBase], level:int=0) -> Iterator[str]:
         self.logger.debug(f'start {self}')
         if next is not None:
@@ -134,7 +132,6 @@ class UMLStateBlock(UMLStateBlockBase):
 
     TASK_CLASS = UMLStateTask
 
-    @override
     def generateDefinition(self, level:int=0) -> Iterator[str]:
         self.logger.debug(f'start {self}')
         is_explicit = self.block.name or self.has_always or self.has_rescue
@@ -220,7 +217,6 @@ class UMLStatePlay(UMLStatePlayBase):
 
             yield (key, value)
 
-    @override
     def generateDefinition(self, level:int=0, only_role=False) -> Iterator[str]:
         self.logger.debug(f'start {self}')
         if not only_role:
@@ -240,7 +236,6 @@ class UMLStatePlay(UMLStatePlayBase):
 
         self.logger.debug(f'end {self}')
 
-    @override
     def generateRelation(self, next:Optional[UMLStateBase], level:int=0) -> Iterator[str]:
         self.logger.debug(f'start {self}')
         for current_state, next_state in pair_state_iter(*self.get_all_tasks(), next):
@@ -262,7 +257,6 @@ class UMLStatePlaybook(UMLStatePlaybookBase):
     BLOCK_CLASS = UMLStateBlock
     TASK_CLASS  = UMLStateTask
 
-    @override
     def generate(self) -> Iterator[str]:
         """
         Generate PlantUML diagram code from playbook state definitions.
