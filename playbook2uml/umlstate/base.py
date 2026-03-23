@@ -54,11 +54,6 @@ class UMLStateTaskBase(UMLStateBase, metaclass=ABCMeta):
     logger : ClassVar[Logger] = logger.getChild("UMLStateTask")
     def __init__(self, task:Task) -> None:
         self.logger.debug('start')
-        import warnings
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore', UserWarning)
-            init_plugin_loader()
-
         self.task = task
         self.id = self.__class__.ID
         self.__class__.ID += 1
@@ -245,6 +240,11 @@ class UMLStatePlaybookBase(metaclass=ABCMeta):
         self.TASK_CLASS.ID = 1
         dataloader = DataLoader()
         variable_manager = VariableManager(loader=dataloader)
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', UserWarning)
+            init_plugin_loader()
+
         if option.role:
             '''
             For only role mode.
