@@ -43,7 +43,7 @@ class UMLStateBase(metaclass=ABCMeta):
     def __str__(self) -> str:
         return f"<{self.__class__.__name__}({self.name})>"
 
-def pair_state_iter(*args) -> Iterator[Tuple[UMLStateBase, UMLStateBase]]:
+def pair_state_iter(*args) -> Iterator[Tuple[UMLStateBase, UMLStateBase | None]]:
     current = args[0]
     for next in args[1:]:
         yield (current, next)
