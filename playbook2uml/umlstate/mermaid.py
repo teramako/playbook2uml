@@ -1,7 +1,7 @@
 #!env python
 # -*- coding: utf-8 -*-
 from __future__ import (absolute_import, division, print_function, annotations)
-from typing import ClassVar, Iterator, Optional
+from typing import Iterator, Optional
 from playbook2uml.umlstate.base import (
     indent,
     logger,
@@ -15,7 +15,13 @@ from playbook2uml.umlstate.base import (
 )
 
 class UMLStateTask(UMLStateTaskBase):
-    ID : ClassVar[int] = 1
+    """
+    UMLStateTask represents a task state in a UML state diagram for Mermaid syntax.
+
+    This class generates UML state definitions and relations for Ansible playbook tasks,
+    including support for conditional execution (when), retry loops (until), and iterative
+    loops (loop).
+    """
 
     def generateDefinition(self, level:int=0) -> Iterator[str]:
         self.logger.debug(f'start {self}')
@@ -23,7 +29,7 @@ class UMLStateTask(UMLStateTaskBase):
         if self.has_when:
             yield from self._generateWhenDefinition(level)
 
-        yield f'{prefix}state "{self.task.get_name()}<hr>action: {self.task.action}" as {self._name}'
+        yield f'{prefix}state "{self.task.get_name()}<hr>action: {self.task.action}" as {self.name}'
 
         if self.has_until:
             yield from self._generateUntilDefinition(level)
@@ -47,20 +53,21 @@ class UMLStateTask(UMLStateTaskBase):
             yield '%s - %s' % (note_indent, when)
         yield '%send note' % (indent*level)
 
-    def generateRelation(self, next: Optional[UMLStateBase] = None, level:int=0) -> Iterator[str]:
+    def generateRelation(self, next: Optional[UMLStateBase], level:int=0) -> Iterator[str]:
         self.logger.debug(f'start {self}')
         prefix = indent * level
-        if self.has_when:
-            yield '%s%s --> %s' % (prefix, self._entry_point_name, self._name)
-            yield '%s%s --> %s' % (prefix, self._end_point_name, next.get_entry_point_name())
-            yield '%s%s --> %s : %s' % (prefix, self._entry_point_name, next.get_entry_point_name(), 'skip')
-        else:
-            yield '%s%s --> %s' % (prefix, self._end_point_name, next.get_entry_point_name())
+        if next is not None:
+            if self.has_when:
+                yield '%s%s --> %s' % (prefix, self._entry_point_name, self.name)
+                yield '%s%s --> %s' % (prefix, self._end_point_name, next.get_entry_point_name())
+                yield '%s%s --> %s : %s' % (prefix, self._entry_point_name, next.get_entry_point_name(), 'skip')
+            else:
+                yield '%s%s --> %s' % (prefix, self._end_point_name, next.get_entry_point_name())
 
         yield from self._generateLoopRelation(level=level)
 
         if self.has_until:
-            yield '%s%s --> %s' % (prefix, self._name, self._end_point_name)
+            yield '%s%s --> %s' % (prefix, self.name, self._end_point_name)
             yield '%s%s --> %s : retry' % (prefix, self._end_point_name, self._entry_point_name)
 
         self.logger.debug(f'end {self}')
@@ -77,11 +84,17 @@ class UMLStateTask(UMLStateTaskBase):
             for loop_item in self.task.loop:
                 loop_items.append(f' - {loop_item}')
         else:
-            loop_items.append(self.task.loop)
-        yield '%s%s --> %s : %s' % (prefix, self._name, self._entry_point_name, '\\n'.join(loop_items))
+            loop_items.append(str(self.task.loop))
+        yield '%s%s --> %s : %s' % (prefix, self.name, self._entry_point_name, '\\n'.join(loop_items))
 
 class UMLStateBlock(UMLStateBlockBase):
-    ID = 1
+    """
+    A UML state block generator for Mermaid diagram syntax.
+
+    This class extends UMLStateBlockBase to generate Mermaid state diagram definitions
+    for Ansible playbook blocks, including support for task execution, always blocks,
+    and rescue (error handling) blocks.
+    """
 
     TASK_CLASS = UMLStateTask
 
@@ -91,8 +104,8 @@ class UMLStateBlock(UMLStateBlockBase):
         next_level = level
         prefix = indent * level
         if is_explicit:
-            yield f'{prefix}{self._name} : {self.block.name}'
-            yield f'{prefix}state {self._name} {{'
+            yield f'{prefix}{self.name} : {self.block.name}'
+            yield f'{prefix}state {self.name} {{'
             next_level+=1
 
         for task in self.tasks:
@@ -109,8 +122,8 @@ class UMLStateBlock(UMLStateBlockBase):
         if not self.has_always:
             return
         prefix = indent * level
-        yield f'{prefix}{self._name}_always : Always'
-        yield f'{prefix}state {self._name}_always {{'
+        yield f'{prefix}{self.name}_always : Always'
+        yield f'{prefix}state {self.name}_always {{'
         for task in self.always:
             yield from task.generateDefinition(level + 1)
         yield f'{prefix}}}'
@@ -119,20 +132,26 @@ class UMLStateBlock(UMLStateBlockBase):
         if not self.has_rescue:
             return
         prefix = indent * level
-        yield f'{prefix}{self._name}_rescue : Rescue'
-        yield f'{prefix}state {self._name}_rescue {{'
+        yield f'{prefix}{self.name}_rescue : Rescue'
+        yield f'{prefix}state {self.name}_rescue {{'
         for task in self.rescue:
             yield from task.generateDefinition(level + 1)
         yield f'{prefix}}}'
 
 class UMLStatePlay(UMLStatePlayBase):
-    ID = 1
+    """
+    Represents a UML state diagram for an Ansible play.
+
+    This class generates Mermaid state diagram definitions and relations for a play,
+    which contains multiple tasks organized in blocks.
+    """
+
     BLOCK_CLASS = UMLStateBlock
 
     def generateDefinition(self, level:int=0, only_role=False) -> Iterator[str]:
         self.logger.debug(f'start {self}')
         if not only_role:
-            yield '%sstate "Play: %s" as %s {' % (indent*level, self.play.get_name(), self._name)
+            yield '%sstate "Play: %s" as %s {' % (indent*level, self.play.get_name(), self.name)
             level += 1
 
         for tasks in self.get_all_tasks():
@@ -143,14 +162,23 @@ class UMLStatePlay(UMLStatePlayBase):
 
         self.logger.debug(f'end {self}')
 
-    def generateRelation(self, next_play:UMLStatePlay=None, level=0) -> Iterator[str]:
+    def generateRelation(self, next:Optional[UMLStateBase], level:int=0) -> Iterator[str]:
         self.logger.debug(f'start {self}')
-        for current_state, next_state in pair_state_iter(*self.get_all_tasks(), next_play):
+        for current_state, next_state in pair_state_iter(*self.get_all_tasks(), next):
             yield from current_state.generateRelation(next_state, level=level)
 
         self.logger.debug(f'end {self}')
 
 class UMLStatePlaybook(UMLStatePlaybookBase):
+    """
+    A class that generates Mermaid.js state diagram code from Ansible playbook structures.
+
+    This class orchestrates the generation of Mermaid.js stateDiagram-v2 syntax by:
+    1. Generating state definitions for all plays, blocks, and tasks
+    2. Generating state transitions/relations between states
+    3. Optionally filtering by role when specified in options
+    4. Supporting left-to-right diagram direction
+    """
 
     PLAY_CLASS  = UMLStatePlay
     BLOCK_CLASS = UMLStateBlock
