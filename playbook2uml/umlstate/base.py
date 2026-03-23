@@ -233,7 +233,7 @@ class UMLStatePlaybookBase(metaclass=ABCMeta):
     BLOCK_CLASS: ClassVar[type[UMLStateBlockBase]]
     TASK_CLASS: ClassVar[type[UMLStateTaskBase]]
 
-    def __init__(self, playbook:str, option:Namespace=None):
+    def __init__(self, playbook:str, option:Namespace):
         self.logger.debug('start')
         self.PLAY_CLASS.ID = 1
         self.BLOCK_CLASS.ID = 1
