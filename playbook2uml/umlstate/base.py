@@ -100,7 +100,7 @@ class UMLStateBlockBase(UMLStateBase, metaclass=ABCMeta):
 
     @classmethod
     def load(cls, block:Block) -> Iterator[UMLStateBlockBase | UMLStateTaskBase]:
-        if block.name or len(block.always) > 0 or len(block.rescue) > 0:
+        if block.name or block.always or block.rescue:
             cls.logger.debug(f'load block as explicit: {cls.ID}')
             yield cls(block)
         elif isinstance(block.block, Iterable):
