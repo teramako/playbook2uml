@@ -172,7 +172,7 @@ class UMLStateStart(UMLStateBase):
 
     @override
     def generateDefinition(self, level: int = 0) -> Iterator[str]:
-        return
+        yield ''
 
     @override
     def generateRelation(self, next:Optional[UMLStateBase], level:int=0) -> Iterator[str]:
