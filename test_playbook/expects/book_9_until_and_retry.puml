@@ -8,7 +8,7 @@ state "= Play: Until and retries" as play_1 {
     state task_1_until <<choice>>
     note right of task_1_until
         **until**: result is success
-        **retres**: 3
+        **retries**: 3
         **delay**: 10 (seconds)
     end note
     state "== Do something" as task_2

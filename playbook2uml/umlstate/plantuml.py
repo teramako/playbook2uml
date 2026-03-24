@@ -74,7 +74,7 @@ class UMLStateTask(UMLStateTaskBase):
         yield '%sstate %s <<choice>>' % (indent*level, self._end_point_name)
         yield '%snote right of %s' % (indent*level, self._end_point_name)
         yield '%s**until**: %s' % (indent*(level+1), self.task.until)
-        yield '%s**retres**: %s' % (indent*(level+1), self.task.retries)
+        yield '%s**retries**: %s' % (indent*(level+1), self.task.retries)
         yield '%s**delay**: %s (seconds)' % (indent*(level+1), self.task.delay)
         yield '%send note' % (indent*level)
 
