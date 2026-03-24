@@ -100,7 +100,7 @@ class UMLStateBlock(UMLStateBlockBase):
 
     def generateDefinition(self, level:int=0) -> Iterator[str]:
         self.logger.debug(f'start {self}')
-        is_explicit = self.block.name or self.has_always or self.has_rescue
+        is_explicit = self.block.name or self.always or self.rescue
         next_level = level
         prefix = indent * level
         if is_explicit:
@@ -119,7 +119,7 @@ class UMLStateBlock(UMLStateBlockBase):
         self.logger.debug(f'end {self}')
 
     def _generateAlwaysDefinition(self, level:int=0) -> Iterator[str]:
-        if not self.has_always:
+        if not self.always:
             return
         prefix = indent * level
         yield f'{prefix}{self.name}_always : Always'
@@ -129,7 +129,7 @@ class UMLStateBlock(UMLStateBlockBase):
         yield f'{prefix}}}'
 
     def _generateRescueDefinition(self, level:int=0) -> Iterator[str]:
-        if not self.has_rescue:
+        if not self.rescue:
             return
         prefix = indent * level
         yield f'{prefix}{self.name}_rescue : Rescue'

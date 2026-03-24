@@ -1,5 +1,5 @@
 from __future__ import (absolute_import, division, print_function, annotations)
-from typing import ClassVar, Iterator, Optional, Tuple
+from typing import ClassVar, Iterator, Optional
 from collections.abc import Iterable
 from abc import ABCMeta, abstractmethod
 from argparse import Namespace
@@ -66,7 +66,7 @@ class UMLStateBase(metaclass=ABCMeta):
     def __str__(self) -> str:
         return f"<{self.__class__.__name__}({self.name})>"
 
-def pair_state_iter(*args) -> Iterator[Tuple[UMLStateBase, UMLStateBase | None]]:
+def pair_state_iter(*args) -> Iterator[tuple[UMLStateBase, UMLStateBase | None]]:
     """
     Iterate over consecutive pairs of states from the given arguments.
 
@@ -95,7 +95,7 @@ class UMLStateTaskBase(UMLStateBase, metaclass=ABCMeta):
     including task naming, conditional logic (when), and loop logic (until).
     """
 
-    ID: ClassVar[int]
+    ID: ClassVar[int] = 1
     logger : ClassVar[Logger] = logger.getChild("UMLStateTask")
 
     def __init__(self, task:Task) -> None:
@@ -108,8 +108,8 @@ class UMLStateTaskBase(UMLStateBase, metaclass=ABCMeta):
         self.logger.debug(f'set name "{self.name}"')
         self._entry_point_name = self.name
         self._end_point_name = self.name
-        self.when = self.get_when_list(self.task)
-        self.has_when = len(self.when) > 0
+        self.when = self._get_when_list(self.task)
+        self.has_when = bool(self.when)
         if self.has_when:
             self._entry_point_name = '%s_when' % self.name
             self.logger.debug(f'{self.name} has `when`. set `_entry_point_name "{self._entry_point_name}"')
@@ -122,7 +122,7 @@ class UMLStateTaskBase(UMLStateBase, metaclass=ABCMeta):
 
         self.logger.debug('end')
 
-    def get_when_list(self, task) -> list[str]:
+    def _get_when_list(self, task) -> list[str]:
         when = task.when
         if when is Sentinel:
             return []
@@ -146,7 +146,7 @@ class UMLStateBlockBase(UMLStateBase, metaclass=ABCMeta):
     elements.
     """
 
-    ID: ClassVar[int]
+    ID: ClassVar[int] = 1
     TASK_CLASS: ClassVar[type[UMLStateTaskBase]]
     logger : ClassVar[Logger] = logger.getChild("UMLStateBlock")
 
@@ -187,12 +187,8 @@ class UMLStateBlockBase(UMLStateBase, metaclass=ABCMeta):
         self.logger.debug(f'start: {self}')
         if isinstance(block.block, Iterable):
             self.tasks = tuple(self.load_tasks(block.block))
-        if isinstance(block.always, Iterable):
-            self.always = tuple(self.load_tasks(block.always))
-        if isinstance(block.rescue, Iterable):
-            self.rescue = tuple(task for task in self.load_tasks(block.rescue))
-        self.has_always = len(self.always) > 0
-        self.has_rescue = len(self.rescue) > 0
+        self.always = tuple(self.load_tasks(block.always)) if isinstance(block.always, Iterable) else ()
+        self.rescue = tuple(task for task in self.load_tasks(block.rescue)) if isinstance(block.rescue, Iterable) else ()
 
         self.logger.debug(f'end: {self}')
 
@@ -200,7 +196,7 @@ class UMLStateBlockBase(UMLStateBase, metaclass=ABCMeta):
         return self.tasks[0].get_entry_point_name()
 
     def get_end_point_name(self) -> str:
-        if self.has_always:
+        if self.always:
             return self.always[-1].get_end_point_name()
         return self.tasks[-1].get_end_point_name()
 
@@ -209,8 +205,8 @@ class UMLStateBlockBase(UMLStateBase, metaclass=ABCMeta):
         for current_state, next_state in pair_state_iter(*self.tasks, *self.always, next):
             yield from current_state.generateRelation(next_state, level=level)
 
-        if self.has_rescue:
-            states = pair_state_iter(*self.rescue, self.always[0] if self.has_always else next)
+        if self.rescue:
+            states = pair_state_iter(*self.rescue, self.always[0] if self.always else next)
             for current_state, next_state in states:
                 yield from current_state.generateRelation(next_state, level=level)
 
@@ -249,7 +245,7 @@ class UMLStatePlayBase(UMLStateBase, metaclass=ABCMeta):
     pre-tasks, roles, tasks, and post-tasks.
     """
 
-    ID: ClassVar[int]
+    ID: ClassVar[int] = 1
     BLOCK_CLASS: ClassVar[type[UMLStateBlockBase]]
     logger = logger.getChild("UMLStatePlay")
 
@@ -274,6 +270,10 @@ class UMLStatePlayBase(UMLStateBase, metaclass=ABCMeta):
         self.logger.debug(f'{self}: {len(self.tasks)} tasks: {[str(t) for t in self.tasks]}')
         self.logger.debug(f'{self}: {len(self.post_tasks)} post_tasks: {[str(t) for t in self.post_tasks]}')
         self.logger.debug('end')
+
+    @abstractmethod
+    def generateDefinition(self, level:int=0, only_role=False) -> Iterator[str]:
+        pass
 
     def get_all_tasks(self) -> tuple[UMLStateBase, ...]:
         return self.pre_tasks + self.roles + self.tasks + self.post_tasks
@@ -326,6 +326,9 @@ class UMLStatePlaybookBase(metaclass=ABCMeta):
         In playbook mode, loads all plays from the given playbook file.
         """
         self.logger.debug('start')
+
+        # Since `ID` is a class variable, it is reset to 1 each time an instance is created
+        # Simultaneous use of multiple instances is not supported
         self.PLAY_CLASS.ID = 1
         self.BLOCK_CLASS.ID = 1
         self.TASK_CLASS.ID = 1
